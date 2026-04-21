@@ -1186,7 +1186,7 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
 /* ── Traceability card ── */
 .landing-card.traceability { border-top-color: #e5e7eb; }
 .landing-card.traceability .lc-meta { color: #64748b; }
-.landing-card.traceability:hover { border-top-color: #0369a1; box-shadow: 0 8px 32px rgba(3,105,161,0.13); }
+.landing-card.traceability:hover { border-top-color: #e5e7eb; box-shadow: 0 8px 32px rgba(3,105,161,0.13); }
 
 /* ── Traceability app wrap ── */
 #traceability-wrap { display: none; flex-direction: column; min-height: 100vh; }
@@ -1312,6 +1312,97 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
 @media (max-width:768px) {
   .trc-g2, .trc-g3, .trc-g4 { grid-template-columns:1fr; }
   .dist-summary-grid { grid-template-columns:1fr; }
+}
+
+/* ============================================================
+   MOBILE MENU FRIENDLINESS (additive only — no desktop changes)
+   Applies ONLY at <=768px / <=480px. All features remain intact.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Prevent any accidental horizontal page scroll on phones */
+  html, body { overflow-x: hidden; max-width: 100vw; }
+
+  /* Top header: let both the title block and the right-side
+     action-button group wrap to a full second line neatly */
+  .header { row-gap: 6px; }
+  .header > div { min-width: 0; max-width: 100%; }
+  .header > div:last-child {
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .header-title { white-space: normal; line-height: 1.2; }
+  .header-sub   { white-space: normal; line-height: 1.25; }
+
+  /* Main calculator tabs already scroll — polish the scrollbar
+     and ensure every tab stays fully readable */
+  .tabs { scrollbar-width: thin; }
+  .tabs::-webkit-scrollbar { height: 4px; }
+  .tabs::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+  /* ETD sub-tabs (Calculator / Results): make horizontally
+     scrollable instead of getting clipped/centered */
+  #etd-app-wrap .etd-subtabs {
+    padding: 0 10px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    scrollbar-width: thin;
+  }
+  #etd-app-wrap .etd-subtabs::-webkit-scrollbar { height: 4px; }
+  #etd-app-wrap .etd-subtabs::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  #etd-app-wrap .etd-subtab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+
+  /* Emission-source adder row: stack on narrow screens so the
+     select + Add + Manual Select buttons stay tappable */
+  .adder-bar { flex-wrap: wrap; padding: 10px; }
+  .adder-bar select { flex: 1 1 100%; }
+  .adder-bar .btn { flex: 1 1 auto; justify-content: center; }
+  .factors-quick-row { justify-content: flex-start; }
+  .factor-actions { flex-wrap: wrap; justify-content: flex-start; }
+
+  /* Traceability page uses inline padding 20px 28px — tighten it */
+  #traceability-wrap > div[style*="padding:20px 28px"] {
+    padding: 14px 10px !important;
+  }
+  /* Traceability action/pagination bar wrap */
+  .trc-table-footer { gap: 10px; }
+  .trc-pagination-wrap { margin-left: 0; width: 100%; }
+
+  /* GHG Savings: the saved-results toolbar and result-toolbar
+     already flex-wrap; just ensure selects don't overflow */
+  .result-toolbar select,
+  #etd-app-wrap .etd-results-toolbar select { min-width: 0; width: 100%; }
+  #etd-app-wrap .etd-results-toolbar > div { width: 100%; }
+
+  /* Modals fit viewport on phones */
+  .modal-card { width: calc(100vw - 24px); max-width: calc(100vw - 24px); padding: 20px 18px; }
+
+  /* Bigger tap targets for menu items */
+  .tab, #etd-app-wrap .etd-subtab { min-height: 40px; }
+  .header .btn, .header-back { min-height: 34px; }
+}
+
+@media (max-width: 480px) {
+  .header-title { font-size: 12.5px; }
+  .header-sub   { font-size: 9px; }
+  .header-back  { padding: 5px 9px; font-size: 11px; }
+  .tabs         { padding: 0 8px; }
+  .tab          { padding: 10px 10px; font-size: 11px; }
+  #etd-app-wrap .etd-subtabs { padding: 0 8px; }
+
+  /* Landing grid cards a touch tighter on small phones */
+  .landing-wrap    { padding: 18px 10px 24px; }
+  .landing-card    { padding: 12px 12px 12px; min-height: 148px; }
+  .landing-card h2 { font-size: 13px; }
+  .landing-card p  { font-size: 10px; }
 }
 </style>
 </head>
@@ -2905,7 +2996,7 @@ function ghgSavingsSaveToSheet(rec) {
 
 function fetchGhgSavingsLog() {
   if (!APPS_SCRIPT_URL) return Promise.resolve();
-  return fetch(APPS_SCRIPT_URL + '?action=getGhgSavingsLog', { method: 'GET' })
+  return fetch(APPS_SCRIPT_URL + '?action=getGhgSavingsLog&token=' + APPS_TOKEN, { method: 'GET' })
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (!Array.isArray(data) || !data.length) return;
@@ -3258,6 +3349,7 @@ function ghgSavingsBuildRecordLabel(r) {
 }
 
 function postToAppsScript(payload) {
+  payload = Object.assign({}, payload, { token: APPS_TOKEN });
   return fetch(APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -3359,7 +3451,7 @@ function applyEfMasterRows(rows) {
 }
 
 function reloadMasterFactors() {
-  fetch(APPS_SCRIPT_URL + '?action=getEfMaster', { method: 'GET' })
+  fetch(APPS_SCRIPT_URL + '?action=getEfMaster&token=' + APPS_TOKEN, { method: 'GET' })
     .then(function(res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
@@ -3405,7 +3497,7 @@ function saveMasterFactors() {
   fetch(APPS_SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'updateEfMaster', rows: rows })
+    body: JSON.stringify({ action: 'updateEfMaster', token: APPS_TOKEN, rows: rows })
   })
     .then(function(res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -3877,7 +3969,8 @@ function calculate() {
 /* 
    GOOGLE SHEETS INTEGRATION
  */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXM4y25upDw5VVIuNl5XorQs4ckpWFdP89JNKviZteYbjsvChEMy1CJTGgVeiocmzB/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5gr-ak_vFC2hskjfWxkZa9l4-0woq2JN6yB_wbje43WGXRXagXnZXKw6ICJGJq-dh/exec';
+const APPS_TOKEN = 'ghg111111117-calcu-ssttn';
 
 function fetchHistory() {
   var tb = document.getElementById('history-tbody');
@@ -3892,7 +3985,7 @@ function fetchHistory() {
   if (gsTb) gsTb.innerHTML = '<tr><td colspan="3" class="gs-log-empty">Loading records...</td></tr>';
   if (gsCount) gsCount.textContent = 'Loading GHG log data...';
 
-  fetch(APPS_SCRIPT_URL, {
+  fetch(APPS_SCRIPT_URL + '?token=' + APPS_TOKEN, {
     method:  'GET',
   })
   .then(function(response) {
@@ -4060,7 +4153,7 @@ function fetchHistory() {
 }
 
 function fetchEtdLog() {
-  return fetch(APPS_SCRIPT_URL + '?action=getEtdLog', {
+  return fetch(APPS_SCRIPT_URL + '?action=getEtdLog&token=' + APPS_TOKEN, {
     method: 'GET',
   })
   .then(function(response) {
@@ -4183,7 +4276,7 @@ function saveToSheet() {
   fetch(APPS_SCRIPT_URL, {
     method:  'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body:    payload,
+    body:    (function(){ try { var p = JSON.parse(payload); p.token = APPS_TOKEN; return JSON.stringify(p); } catch(e) { return payload; } })(),
   })
   .then(function(response) {
     if (!response.ok) {
@@ -5721,6 +5814,7 @@ function _mapSheetRowToEtdResult_(row) {
     blDate: String(row.blDate || '').trim(),
     certType: String(row.certType || row.certificate || '').trim(),
     loadingPort: String(row.loadingPort || '').trim(),
+    sdNumber: String(row.sdNumber || row.kodeSD || row.sd_number || '').trim(),
     shipmentDest: String(row.shipmentDest || row.route || row.destinationLabel || '').trim(),
     refinery: refinery || '-',
     truckDist: _toNum_(row.truckDist != null ? row.truckDist : (rp.dist_truck != null ? rp.dist_truck : row.distanceTrucking)),
@@ -5927,6 +6021,7 @@ function renderEtdResultsList() {
       + '<span><b>Loading Port:</b> '+escH(r.loadingPort||'—')+'</span>'
       + '<span><b>Origin:</b> '+escH(r.origin||'—')+'</span>'
       + '<span><b>Cert:</b> '+escH(r.certType||'—')+'</span>'
+      + '<span><b>SD Number:</b> '+escH(r.sdNumber||'—')+'</span>'
       + '<span><b>Refinery:</b> '+escH(r.refinery||'—')+'</span>'
       + '<span><b>Shipment Dest:</b> '+escH(r.shipmentDest||'—')+'</span>'
       + '</div>'
@@ -6043,6 +6138,7 @@ function _buildEtdResultBlockPdf(r, idx) {
     +     '<td style="padding:5px 10px"><b>Loading Port:</b> '+escH(r.loadingPort||'—')+'</td>'
     +     '<td style="padding:5px 10px"><b>Origin:</b> '+escH(r.origin||'—')+'</td>'
     +     '<td style="padding:5px 10px"><b>Cert:</b> '+escH(r.certType||'—')+'</td>'
+    +     '<td style="padding:5px 10px"><b>SD Number:</b> '+escH(r.sdNumber||'—')+'</td>'
     +     '<td style="padding:5px 10px"><b>Refinery:</b> '+escH(r.refinery||'—')+'</td>'
     +     '<td style="padding:5px 10px"><b>Shipment Dest:</b> '+escH(r.shipmentDest||'—')+'</td>'
     +   '</tr>'
@@ -6162,7 +6258,7 @@ function exportEtdResultsPdf() {
     +   '</tr>'
     + '</table>'
     + '<div style="font-size:7.5pt;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid #e2e8f0">'
-    + 'ETD GHG Results — BL Date · Loading Port · Country of Origin · Vessel Name'
+    + 'ETD GHG Results — BL Date · Loading Port · Country of Origin · Vessel Name · Cert · SD Number'
     + '</div>'
     + resultBlocks
     + '<div style="margin-top:6px;font-size:6.5pt;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:4px;text-transform:uppercase;letter-spacing:.3px">'
@@ -6197,16 +6293,16 @@ function exportEtdResultsExcel() {
     ['ETD RESULTS — TRANSPORTATION & DISTRIBUTION EMISSIONS'],
     ['Module', 'ETD — RPOME', '', 'Methodology', 'RED III', '', 'Unit', 'kg CO2eq/dry-t'],
     [],
-    ['BL Date','Loading Port','Country of Origin','Vessel Name','Cert Type','Supplier','Refinery','Dist. Trucking (km)','Dist. Vessel 1 (km)','Dist. Vessel 2 (km)','ETD Total FOB (kg CO2eq/dry-t)']
+    ['BL Date','Loading Port','Country of Origin','Vessel Name','Cert Type','SD Number','Supplier','Refinery','Dist. Trucking (km)','Dist. Vessel 1 (km)','Dist. Vessel 2 (km)','ETD Total FOB (kg CO2eq/dry-t)']
   ];
   var dataRows = etdResultsLog.map(function(r){
-    return [r.blDate||'',r.loadingPort||'',r.origin||'',r.vesselName||'',r.certType||'',r.supplier||'',r.refinery||'',r.truckDist||0,r.vesselDist1||0,r.vesselDist2||0,r.etdTotal||0];
+    return [r.blDate||'',r.loadingPort||'',r.origin||'',r.vesselName||'',r.certType||'',r.sdNumber||'',r.supplier||'',r.refinery||'',r.truckDist||0,r.vesselDist1||0,r.vesselDist2||0,r.etdTotal||0];
   });
 
   var allRows = headerMeta.concat(dataRows);
   var ws = XLSX.utils.aoa_to_sheet(allRows);
-  ws['!cols'] = [{wch:14},{wch:18},{wch:18},{wch:20},{wch:12},{wch:28},{wch:12},{wch:20},{wch:20},{wch:20},{wch:28}];
-  ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:10}}];
+  ws['!cols'] = [{wch:14},{wch:18},{wch:18},{wch:20},{wch:12},{wch:14},{wch:28},{wch:12},{wch:20},{wch:20},{wch:20},{wch:28}];
+  ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:11}}];
 
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ETD Results');
@@ -6569,10 +6665,19 @@ function trcOnRefineryChange() {
   document.getElementById('trc-ep-refinery').value = d.Ep.toFixed(5);
 }
 
+function formatBlDate_(val) {
+  if (!val) return '—';
+  var parts = val.split('-');
+  if (parts.length === 3 && parts[0].length === 4) {
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
+  return val;
+}
+
 function trcSaveToETD() {
   var supplierName = document.getElementById('trc-selected-supplier').value.trim();
   var refinery = document.getElementById('trc-refinery').value;
-  var blDate = document.getElementById('trc-bl-date').value;
+  var blDate = formatBlDate_(document.getElementById('trc-bl-date').value);
   var blNumber = document.getElementById('trc-bl-number').value;
   var vesselName = document.getElementById('trc-vessel').value;
   var certType = document.getElementById('trc-cert-type').value;
@@ -6603,6 +6708,8 @@ function trcSaveToETD() {
   var etdS = rp.S != null ? rp.S : null;
   var etdT = rp.T != null ? rp.T : null;
 
+  var kodeSD = (document.getElementById('trc-kode-sd') && document.getElementById('trc-kode-sd').value) || '';
+
   var record = {
     id: 'trc_etd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
     savedAt: new Date().toLocaleString('id-ID'),
@@ -6611,8 +6718,9 @@ function trcSaveToETD() {
     vesselName: vesselName || '—',
     blNumber: blNumber || '—',
     blDate: blDate || '—',
-    certType: certType,
+    certType: certType || '—',
     loadingPort: loadingPort || '—',
+    sdNumber: kodeSD || '—',
     shipmentDest: shipmentDest || '—',
     refinery: refinery,
     truckDist: truckDist,
@@ -6626,6 +6734,8 @@ function trcSaveToETD() {
     rawPayload: rp
   };
 
+  // Remove any duplicate entries (including the blank one inserted by etdCalculate)
+  etdResultsLog = etdResultsLog.filter(function(x){ return x.supplier !== supplierName || x.refinery !== refinery; });
   etdResultsLog.unshift(record);
   renderEtdResultsList();
   trcPostETDResult(record);
@@ -6682,7 +6792,7 @@ function exportTrcPdf() {
   };
   selected = selected.slice().sort(function (a, b) { return _trcDistOf_(b) - _trcDistOf_(a); });
 
-  var blDate     = document.getElementById('trc-bl-date').value || '—';
+  var blDate     = formatBlDate_(document.getElementById('trc-bl-date').value) || '—';
   var blNumber   = document.getElementById('trc-bl-number').value || '—';
   var vessel     = document.getElementById('trc-vessel').value || '—';
   var certType   = document.getElementById('trc-cert-type').value || '—';
@@ -6911,7 +7021,7 @@ function exportTrcExcel() {
   if (!selected.length) selected = trcFilteredSuppliers.length ? trcFilteredSuppliers : TRC_SUPPLIERS;
   if (!selected.length) { showToast('Tidak ada data untuk di-export', 'error'); return; }
 
-  var blDate   = document.getElementById('trc-bl-date').value || '';
+  var blDate   = formatBlDate_(document.getElementById('trc-bl-date').value) || '';
   var blNumber = document.getElementById('trc-bl-number').value || '';
   var vessel   = document.getElementById('trc-vessel').value || '';
   var certType = document.getElementById('trc-cert-type').value || '';
@@ -7056,7 +7166,7 @@ function trcSaveInputSupplier() {
 
 function trcFetchSupplierDB() {
   if (!TRC_APPS_SCRIPT_URL) return;
-  fetch(TRC_APPS_SCRIPT_URL + '?action=getSuppliers', { method: 'GET' })
+  fetch(TRC_APPS_SCRIPT_URL + '?action=getSuppliers&token=' + APPS_TOKEN, { method: 'GET' })
     .then(function(res){ return res.json(); })
     .then(function(data){
       if (data && data.status === 'error') throw new Error(data.message || 'Server error');
@@ -7091,7 +7201,7 @@ function trcPostETDResult(record) {
     fetch(TRC_APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'saveETDResult', data: record })
+      body: JSON.stringify({ action: 'saveETDResult', token: APPS_TOKEN, data: record })
     })
     .then(function(res){ return res.json(); })
     .then(function(result){ if (result.status === 'ok') showToast('ETD result synced to Sheets', 'success'); })
@@ -7112,6 +7222,14 @@ function trcPostETDResult(record) {
       unit: 'kg CO2eq/dry-ton',
       supplier: record.supplier || '',
       refinery: record.refinery || '',
+      blDate: record.blDate || '',
+      loadingPort: record.loadingPort || '',
+      certType: record.certType || '',
+      sdNumber: record.sdNumber || '',
+      vesselName: record.vesselName || '',
+      blNumber: record.blNumber || '',
+      origin: record.origin || '',
+      shipmentDest: record.shipmentDest || '',
       truckDist: _toNum_(record.truckDist),
       vesselDist1: _toNum_(record.vesselDist1),
       vesselDist2: _toNum_(record.vesselDist2),
