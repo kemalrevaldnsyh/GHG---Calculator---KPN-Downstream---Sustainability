@@ -7,20 +7,70 @@ function applyEtdBranding() {
   var blockTitle = document.getElementById('etd-block-title');
   var blockSub = document.getElementById('etd-block-sub');
   var blockBadge = document.getElementById('etd-block-badge');
+  var gglBlockTitle = document.getElementById('ggl-etd-block-title');
+  var gglBlockSub = document.getElementById('ggl-etd-block-sub');
+  var gglBlockBadge = document.getElementById('ggl-etd-block-badge');
   if (ETD_VARIANT === 'ggl') {
     if (title) title.textContent = 'ETD — GGL';
-    if (sub) sub.textContent = 'Transportation & processing · GGL';
+    if (sub) sub.textContent = 'Transportation Cangkang · GGL';
     if (blockTitle) blockTitle.textContent = 'GHG Emission Calculator — GGL';
-    if (blockSub) blockSub.textContent = 'Transportation & Processing Emissions · GGL';
+    if (blockSub) blockSub.textContent = 'Transportation & Processing Emissions · Cangkang';
     if (blockBadge) blockBadge.textContent = 'GGL';
+    if (gglBlockTitle) gglBlockTitle.textContent = 'GHG Emission Calculator — GGL';
+    if (gglBlockSub) gglBlockSub.textContent = 'Transportation & Processing Emissions · Cangkang';
+    if (gglBlockBadge) gglBlockBadge.textContent = 'GGL';
   } else {
     if (title) title.textContent = 'ETD — RPOME';
     if (sub) sub.textContent = 'Transportation & processing (lokal)';
     if (blockTitle) blockTitle.textContent = 'GHG Emission Calculator';
     if (blockSub) blockSub.textContent = 'Transportation & Processing Emissions';
     if (blockBadge) blockBadge.textContent = 'Precision Formula Based';
+    if (gglBlockTitle) gglBlockTitle.textContent = 'GHG Emission Calculator';
+    if (gglBlockSub) gglBlockSub.textContent = 'Transportation & Processing Emissions';
+    if (gglBlockBadge) gglBlockBadge.textContent = 'Precision Formula Based';
+  }
+  refreshEtdDestinationOptions();
+}
+
+function refreshEtdDestinationOptions() {
+  var sel = document.getElementById('destination');
+  var gglSel = document.getElementById('ggl-destination');
+  var prev = sel ? sel.value : '';
+  var gglPrev = gglSel ? gglSel.value : '';
+
+  function fillGglOptions(selectEl, preferred) {
+    if (!selectEl || typeof GGL_ETD === 'undefined') return;
+    var html = '';
+    Object.keys(GGL_ETD.destinations).forEach(function(k) {
+      var d = GGL_ETD.destinations[k];
+      html += '<option value="' + k + '">' + d.label + ' (' + k + ')</option>';
+    });
+    selectEl.innerHTML = html;
+    if (GGL_ETD.destinations[preferred]) selectEl.value = preferred;
+    else selectEl.value = 'PLM';
+  }
+
+  function fillRpomeOptions(selectEl, preferred) {
+    if (!selectEl) return;
+    selectEl.innerHTML = ''
+      + '<option value="LBG">PMC Lubuk Gaung (LBG)</option>'
+      + '<option value="TJP">EUP Tanjung Pura (TJP)</option>'
+      + '<option value="BTG">EUP Bontang (BTG)</option>'
+      + '<option value="TPG">TPG Tanjung Langsat</option>'
+      + '<option value="GLM">GLM Port Klang</option>';
+    if (['LBG','TJP','BTG','TPG','GLM'].indexOf(preferred) >= 0) selectEl.value = preferred;
+    else selectEl.value = 'LBG';
+  }
+
+  if (ETD_VARIANT === 'ggl') {
+    fillGglOptions(sel, prev);
+    fillGglOptions(gglSel, gglPrev || prev);
+  } else {
+    fillRpomeOptions(sel, prev);
   }
 }
+
+function updateGglEtdEpHint() { /* Ep shown in ETD results block — same as standalone ETD */ }
 
 function openETDMode(variant) {
   ETD_VARIANT = variant === 'ggl' ? 'ggl' : 'rpome';
@@ -42,10 +92,20 @@ function openETDMode(variant) {
 }
 
 function openETDGGLMode() {
-  openETDMode('ggl');
+  openGGLMode();
+  var tab = document.getElementById('tab-etd');
+  if (tab) switchTab('etd', tab);
 }
 
 function epLabelSet(calcType) {
+  if (calcType === 'ggl') {
+    return {
+      dry1: 'Ep / dry-ton Cangkang',
+      dry2: '—',
+      a1: 'Ep / dry-ton Cangkang',
+      a2: '—',
+    };
+  }
   if (calcType === 'biodiesel') {
     return {
       dry1: 'Ep / dry-ton PME',
@@ -101,6 +161,11 @@ const g   = id => parseFloat(document.getElementById(id).value)||0;
 const sv  = (id,v) => document.getElementById(id).value = v;
 const st  = (id,v) => document.getElementById(id).textContent = v;
 const fmt = (v,d=2) => (isNaN(v)||!isFinite(v)) ? '0.00' : v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+/** GGL display decimals aligned with EUP Excel (Ep sheet) */
+function fmtGglCo2(v) { return fmt(v, 2); }
+function fmtGglTotal(v) { return fmt(v, 3); }
+function fmtGglEp(v) { return fmt(v, 2); }
 
 function saveLatestEtdSnapshot(payload) {
   try {
@@ -164,6 +229,12 @@ function postToAppsScript(payload) {
 }
 
 function getEfHint(key) {
+  if (CALC_MODE === 'ggl' && key === 'biosolar') {
+    return 'L×0.815×0.7×EF ' + GGL_PROCESSING.biosolar_ef;
+  }
+  if (CALC_MODE === 'ggl' && key === 'elec') {
+    return 'EF ' + GGL_PROCESSING.elec_ef;
+  }
   var val = EF[key];
   if (val == null) return 'EF -';
   return 'EF ' + val;
@@ -265,7 +336,7 @@ function reloadMasterFactors() {
       var appliedCount = applyEfMasterRows(rows) || 0;
       renderFactorEditorRows();
       if (appliedCount > 0) showToast('Factors reloaded', 'success');
-      else showToast('EF_MASTER masih kosong, pakai default app', 'success');
+      else showToast('EF_MASTER is empty, using app defaults', 'success');
     })
     .catch(function() {
       showToast('EF master not available, using local defaults', 'error');
@@ -353,7 +424,7 @@ function renderFormulas() {
 
   // Only for "current input" calculations (when R exists)
   if (!R || !R.total) {
-    mainEl.innerHTML = '<div class="formula-hint">Belum ada kalkulasi. Isi input dulu ya.</div>';
+    mainEl.innerHTML = '<div class="formula-hint">No calculation yet. Fill in the inputs first.</div>';
     itemsEl.innerHTML = '';
     noteEl.textContent = '';
     return;
@@ -371,20 +442,24 @@ function renderFormulas() {
   var mainHtml = '';
   var Lf = modeLabels();
   if (CALC_MODE === 'ggl') {
-    mainHtml += line('Electricity', 'elec = value × EF = ' + fmt(R.elec,2));
-    mainHtml += line('Solar', 'solar = value × EF = ' + fmt(R.solar || 0,2));
-    mainHtml += line('Total Ep', 'elec + solar = ' + fmt(R.total,2));
+    var biosolarL = g('r-biosolar');
+    var biosolarKg = biosolarL * GGL_PROCESSING.biosolar_liter_to_kg;
+    var biosolarCo2 = biosolarKg * GGL_PROCESSING.biosolar_ef;
+    mainHtml += line('Bio Solar', fmt(biosolarL,3) + ' L × 0.815 × 0.7 × ' + GGL_PROCESSING.biosolar_ef + ' = ' + fmtGglCo2(biosolarCo2));
+    mainHtml += line('Electricity', fmt(g('r-elec'),3) + ' × ' + GGL_PROCESSING.elec_ef + ' = ' + fmtGglCo2(R.elec));
+    mainHtml += line('Total Ep', fmtGglCo2(biosolarCo2) + ' + ' + fmtGglCo2(R.elec) + ' = ' + fmtGglTotal(R.total));
+    mainHtml += line(Lf.epDry1, fmtGglTotal(R.total) + ' / ' + fmt(rpomeDry,4) + ' = ' + fmtGglEp(R.epRpome));
   } else {
     mainHtml += line('Fuel total', 'coal + biosolar + lng = ' + fmt(R.coal,2) + ' + ' + fmt(R.biosolar,2) + ' + ' + fmt(R.lng,2) + ' = ' + fmt(R.fuelTotal,2));
     mainHtml += line('Chemical total', 'Σ chemicals = ' + fmt(R.chemTotal,2));
     mainHtml += line('Electricity', 'elec = value × EF = ' + fmt(R.elec,2));
     mainHtml += line('Water', 'water = value × EF = ' + fmt(R.water,2));
     mainHtml += line('Total Ep', 'fuel + chemical + elec + water = ' + fmt(R.total,2));
+    mainHtml += line(Lf.epDry1, 'total / dry mass stream 1 = ' + fmt(R.total,2) + ' / ' + fmt(rpomeDry,4) + ' = ' + fmt(R.epRpome,5));
+    mainHtml += line(Lf.epDry2, 'total / fadDry = ' + fmt(R.total,2) + ' / ' + fmt(fadDry,4) + ' = ' + fmt(R.epFad,5));
+    mainHtml += line(Lf.epAlloc1, 'ep₁ × AF₁ = ' + fmt(R.epRpome,5) + ' × ' + fmt(rpomeAF,6) + ' = ' + fmt(R.epRpomeAlloc,5));
+    mainHtml += line(Lf.epAlloc2, 'ep₂ × AF₂ = ' + fmt(R.epFad,5) + ' × ' + fmt(fadAF,6) + ' = ' + fmt(R.epFadAlloc,5));
   }
-  mainHtml += line(Lf.epDry1, 'total / dry mass stream 1 = ' + fmt(R.total,2) + ' / ' + fmt(rpomeDry,4) + ' = ' + fmt(R.epRpome,5));
-  mainHtml += line(Lf.epDry2, 'total / fadDry = ' + fmt(R.total,2) + ' / ' + fmt(fadDry,4) + ' = ' + fmt(R.epFad,5));
-  mainHtml += line(Lf.epAlloc1, 'ep₁ × AF₁ = ' + fmt(R.epRpome,5) + ' × ' + fmt(rpomeAF,6) + ' = ' + fmt(R.epRpomeAlloc,5));
-  mainHtml += line(Lf.epAlloc2, 'ep₂ × AF₂ = ' + fmt(R.epFad,5) + ' × ' + fmt(fadAF,6) + ' = ' + fmt(R.epFadAlloc,5));
   if (CALC_MODE === 'biodiesel') {
     mainHtml += line('Ep g CO₂eq/MJ PME', '(total × AF₁ × 1000) / (dry kg PME × 37) = ' + fmt(R.epMj,5));
   }
@@ -396,13 +471,18 @@ function renderFormulas() {
     if (!addedItems || !addedItems.has(key)) return;
     var item = ITEMS[key];
     var val = g(item.inputId);
+    if (CALC_MODE === 'ggl' && key === 'biosolar') {
+      var resB = val * GGL_PROCESSING.biosolar_liter_to_kg * GGL_PROCESSING.biosolar_ef;
+      itemLines += line(item.label, fmt(val,3) + ' L × 0.815 × 0.7 × ' + GGL_PROCESSING.biosolar_ef + ' = ' + fmtGglCo2(resB));
+      return;
+    }
     var ef  = EF[key];
     var res = val * ef;
     itemLines += line(item.label, fmt(val,3) + ' × ' + ef + ' = ' + fmt(res,2));
   });
-  itemsEl.innerHTML = itemLines || '<div class="formula-hint">Belum ada item yang ditambahkan.</div>';
+  itemsEl.innerHTML = itemLines || '<div class="formula-hint">No items added yet.</div>';
 
-  noteEl.textContent = 'Rumus ini mengikuti perhitungan yang sama dengan tabel hasil dan export.';
+  noteEl.textContent = 'Formulas match the results table and export output.';
 }
 
 function renderFormulasSaved(record) {
@@ -430,7 +510,7 @@ function renderFormulasSaved(record) {
   var epMjSaved = hasRaw ? (parseFloat(raw.epMj) || 0) : (parseFloat(record.epMj) || 0);
   var savedCt = (raw.calcType || record.calcType || 'refinery').toString().toLowerCase();
   if (savedCt !== 'biodiesel' && savedCt !== 'ggl') savedCt = 'refinery';
-  var Ls = epLabelSet(savedCt === 'ggl' ? 'refinery' : savedCt);
+  var Ls = epLabelSet(savedCt);
   Ls.epDry1 = Ls.dry1; Ls.epDry2 = Ls.dry2; Ls.epAlloc1 = Ls.a1; Ls.epAlloc2 = Ls.a2;
 
   var rpomeDry = parseFloat(raw.rpomeDry) || 0;
@@ -469,9 +549,9 @@ function renderFormulasSaved(record) {
     itemHtml += line(label, 'result = ' + fmt(res,2));
     shown++;
   });
-  itemsEl.innerHTML = shown ? itemHtml : '<div class="formula-hint">Saved record lama belum menyimpan detail variable untuk breakdown. Save ulang sekali untuk dapat rumus lengkap.</div>';
+  itemsEl.innerHTML = shown ? itemHtml : '<div class="formula-hint">Older saved records may not include variable breakdown. Save again for full formulas.</div>';
 
-  noteEl.textContent = 'Rumus diambil dari saved record (Google Sheets). Untuk rumus lengkap (dengan dry-ton & AF), save ulang setelah update ini.';
+  noteEl.textContent = 'Formulas from saved record (Google Sheets). For full formulas (dry-ton & AF), save again after this update.';
 }
 
 /* 
@@ -481,7 +561,7 @@ function addItem() {
   const sel = document.getElementById('item-select');
   const key = sel.value;
   if (ITEM_INPUT_MODE !== 'manual') {
-    showToast('Aktifkan Manual Select untuk menambah item satu-satu', 'error');
+    showToast('Enable Manual Select to add items one at a time', 'error');
     return;
   }
   if (!key) { showToast('Please select an item first', 'error'); return; }
@@ -575,7 +655,7 @@ function setItemInputMode(mode, opts) {
 function toggleManualSelectMode() {
   var nextMode = ITEM_INPUT_MODE === 'manual' ? 'all' : 'manual';
   setItemInputMode(nextMode, { force: true });
-  showToast(nextMode === 'manual' ? 'Manual Select aktif' : 'Semua emission sources ditampilkan', 'success');
+  showToast(nextMode === 'manual' ? 'Manual Select enabled' : 'All emission sources shown', 'success');
 }
 
 function renderItemCard(key) {
@@ -623,7 +703,7 @@ function updateEmptyState() {
     if (ITEM_INPUT_MODE === 'manual') {
       emptyEl.innerHTML = '<strong>No items added yet</strong>Select an emission source above and click <em>Add Item</em> to begin.';
     } else {
-      emptyEl.innerHTML = '<strong>Semua emission source sudah dihapus</strong>Klik <em>Manual Select</em> untuk pilih satu-satu, atau klik <em>Show All Sources</em> untuk tampilkan ulang semua.';
+      emptyEl.innerHTML = '<strong>All emission sources removed</strong>Click <em>Manual Select</em> to add one at a time, or <em>Show All Sources</em> to restore all items.';
     }
     container.appendChild(emptyEl);
   } else if (hasItems && emptyEl) {
@@ -635,6 +715,22 @@ function updateEmptyState() {
    AF / FF CALCULATION
  */
 function calculateAF() {
+  if (CALC_MODE === 'ggl') {
+    const wet = g('af-rpome-val');
+    const mc = g('af-rpome-mc') || GGL_PROCESSING.cangkang_moisture_pct;
+    const dry = wet - (wet * mc) / 100;
+    sv('af-rpome-dry', fmt(dry, 4));
+    sv('af-rpome-er', wet > 0 ? '100' : '0');
+    sv('af-rpome-af', '1');
+    sv('af-rpome-ff', '1');
+    sv('af-fad-dry', '0');
+    sv('af-fad-er', '0');
+    sv('af-fad-af', '0');
+    sv('af-fad-ff', '0');
+    calculate();
+    return;
+  }
+
   const LHV = 37;
   const pomeC = g('af-pome-val'), pomeMC = g('af-pome-mc');
   const pomeDry = pomeC - (pomeC * pomeMC) / 100;
@@ -680,13 +776,14 @@ function calculate() {
   var na2co3 = 0, na2so3 = 0, pac = 0, naoh = 0, cyclohex = 0, nhex = 0, ipa = 0, hcl = 0, be = 0, h3po4 = 0;
   var methanol = 0, sodiumMethylate = 0, citricAcid = 0;
   var chemBase = 0, chemTotal = 0;
-  var elec = 0, water = 0, solar = 0;
+  var elec = 0, water = 0, solar = 0, biosolarCo2 = 0;
   var total = 0;
 
   if (CALC_MODE === 'ggl') {
-    elec = g('r-elec') * EF.elec;
-    solar = g('r-solar') * EF.solar;
-    total = elec + solar;
+    var biosolarL = g('r-biosolar');
+    biosolarCo2 = biosolarL * GGL_PROCESSING.biosolar_liter_to_kg * GGL_PROCESSING.biosolar_ef;
+    elec = g('r-elec') * GGL_PROCESSING.elec_ef;
+    total = biosolarCo2 + elec;
   } else {
     coal = g('r-coal') * EF.coal;
     biosolar = g('r-biosolar') * EF.biosolar;
@@ -718,9 +815,9 @@ function calculate() {
   const fadAF    = parseFloat(document.getElementById('af-fad-af').value)||0;
 
   const epRpome      = rpomeDry > 0 ? total / rpomeDry : 0;
-  const epFad        = fadDry   > 0 ? total / fadDry   : 0;
-  const epRpomeAlloc = epRpome  * rpomeAF;
-  const epFadAlloc   = epFad    * fadAF;
+  const epFad        = (CALC_MODE === 'ggl') ? 0 : (fadDry > 0 ? total / fadDry : 0);
+  const epRpomeAlloc = (CALC_MODE === 'ggl') ? epRpome : epRpome * rpomeAF;
+  const epFadAlloc   = (CALC_MODE === 'ggl') ? 0 : epFad * fadAF;
 
   const rpomeDryKg = rpomeDry * 1000;
   const mjPme = rpomeDryKg * 37;
@@ -729,17 +826,19 @@ function calculate() {
   R = {
     coal,biosolar,lng,fuelTotal,na2co3,na2so3,pac,naoh,cyclohex,nhex,ipa,hcl,be,h3po4,
     methanol,sodiumMethylate,citricAcid,
-    chemTotal,elec,water,solar,total,epRpome,epFad,epRpomeAlloc,epFadAlloc,epMj,
+    chemTotal,elec,water,solar,biosolarCo2,total,epRpome,epFad,epRpomeAlloc,epFadAlloc,epMj,
     epProduct1: epRpome, epProduct2: epFad, epAlloc1: epRpomeAlloc, epAlloc2: epFadAlloc,
     calcType: CALC_MODE,
   };
 
   const kco2 = v => fmt(v)+' kg COeq';
+  const kco2Ggl = v => fmtGglCo2(v)+' kg COeq';
   if (CALC_MODE === 'ggl') {
+    st('p-ggl-fuel', kco2Ggl(biosolarCo2));
     st('p-fuel', '—');
     st('p-chem', '—');
-    st('p-elec', kco2(elec));
-    st('p-solar', kco2(solar));
+    st('p-elec', kco2Ggl(elec));
+    st('p-solar', '—');
     st('p-water', '—');
   } else {
     st('p-fuel',  kco2(fuelTotal));
@@ -748,14 +847,24 @@ function calculate() {
     st('p-solar', '—');
     st('p-water', kco2(water));
   }
-  st('p-total', fmt(total)+' kg COeq');
-  st('p-ep-rpome',       fmt(epRpome,5)      +' kg COeq/dry-ton');
+  if (CALC_MODE === 'ggl') {
+    st('p-total', fmtGglTotal(total)+' kg COeq');
+    st('p-ep-rpome',       fmtGglEp(epRpome)      +' kg COeq/dry-ton');
+    st('res-total', fmtGglTotal(total));
+    st('res-rpome', fmtGglEp(epRpome));
+    st('res-fad',   '—');
+    st('res-alloc', fmtGglEp(epRpome));
+  } else {
+    st('p-total', fmt(total)+' kg COeq');
+    st('p-ep-rpome',       fmt(epRpome,5)      +' kg COeq/dry-ton');
+    st('res-total', fmt(total,2));
+    st('res-rpome', fmt(epRpome,2));
+    st('res-fad',   fmt(epFad,2));
+    st('res-alloc', fmt(epRpomeAlloc,2));
+  }
   st('p-ep-fad',         fmt(epFad,5)        +' kg COeq/dry-ton');
   st('p-ep-rpome-alloc', fmt(epRpomeAlloc,5) +' kg COeq/dry-ton');
   st('p-ep-fad-alloc',   fmt(epFadAlloc,5)   +' kg COeq/dry-ton');
-
-  st('res-total', fmt(total,2)); st('res-rpome', fmt(epRpome,2));
-  st('res-fad',   fmt(epFad,2)); st('res-alloc', fmt(epRpomeAlloc,2));
   st('res-epmj',  fmt(epMj,4));
   if (CALC_MODE === 'biodiesel') st('p-ep-mj', fmt(epMj,4) + ' g/MJ');
   else st('p-ep-mj', '—');
@@ -764,10 +873,10 @@ function calculate() {
   var rows;
   if (CALC_MODE === 'ggl') {
     rows = [
-      {cat:'A. Emissions Electricity'},
-      {name:'Electricity', val:g('r-elec'), ef:EF.elec, res:elec, uom:'kg COeq/kWh', ref:REFS.elec},
-      {cat:'B. Emissions Solar'},
-      {name:'Solar', val:g('r-solar'), ef:EF.solar, res:solar, uom:'kg COeq/kWh', ref:REFS.solar},
+      {cat:'A. Emissions Bio Solar'},
+      {name:'Bio Solar', val:g('r-biosolar'), ef:GGL_PROCESSING.biosolar_ef, res:biosolarCo2, uom:'kg COeq (L×0.815×0.7×EF)', ref:'SK Dirjen Migas · Ecoinvent 3.7'},
+      {cat:'B. Emissions Electricity'},
+      {name:'Electricity', val:g('r-elec'), ef:GGL_PROCESSING.elec_ef, res:elec, uom:'kg COeq/kWh', ref:'Grid Sumatera 2019 (EF 0.94)'},
     ];
   } else {
     rows = [
@@ -800,26 +909,35 @@ function calculate() {
     ];
   }
   let html='';
+  var fmtResCell = CALC_MODE === 'ggl' ? fmtGglCo2 : function(v) { return fmt(v); };
+  var fmtSumCell = CALC_MODE === 'ggl' ? fmtGglTotal : function(v) { return fmt(v); };
+  var fmtEpCell = CALC_MODE === 'ggl' ? fmtGglEp : function(v) { return fmt(v, 5); };
   rows.forEach(r=>{
     if(r.cat) html+=`<tr class="cat-row"><td colspan="6">${r.cat}</td></tr>`;
     else if(r.sub) html+=`<tr><td colspan="3" style="text-align:right;color:#9ca3af;font-size:11px;padding:6px 12px">${r.sub}</td><td></td><td class="c-blue" style="font-weight:600">${fmt(r.val)}</td><td></td></tr>`;
-    else html+=`<tr><td>${r.name}</td><td style="color:#6b7280">${r.val?fmt(r.val,3):'0'}</td><td style="color:#6b7280">${r.ef}</td><td style="color:#9ca3af;font-size:11px">${r.uom}</td><td style="font-weight:500">${fmt(r.res)}</td><td style="color:#d1d5db;font-size:11px">${r.ref}</td></tr>`;
+    else html+=`<tr><td>${r.name}</td><td style="color:#6b7280">${r.val?fmt(r.val,3):'0'}</td><td style="color:#6b7280">${r.ef}</td><td style="color:#9ca3af;font-size:11px">${r.uom}</td><td style="font-weight:500">${fmtResCell(r.res)}</td><td style="color:#d1d5db;font-size:11px">${r.ref}</td></tr>`;
   });
   html+=`
     <tr style="background:#f9fafb;border-top:2px solid #e5e7eb">
       <td colspan="3" style="font-weight:600">Sum of Process Emissions</td><td></td>
-      <td class="c-blue" style="font-weight:700;font-size:14px">${fmt(total)}</td><td style="color:#9ca3af;font-size:11px">kg COeq</td>
+      <td class="c-blue" style="font-weight:700;font-size:14px">${fmtSumCell(total)}</td><td style="color:#9ca3af;font-size:11px">kg COeq</td>
     </tr>
-    <tr><td colspan="3" style="color:#9ca3af;padding-top:6px">${Lrow.epDry1}</td><td></td><td class="c-green" style="font-weight:600">${fmt(epRpome,5)}</td><td style="color:#9ca3af;font-size:11px">kg COeq/dry-ton</td></tr>
+    <tr><td colspan="3" style="color:#9ca3af;padding-top:6px">${Lrow.epDry1}</td><td></td><td class="c-green" style="font-weight:600">${fmtEpCell(epRpome)}</td><td style="color:#9ca3af;font-size:11px">kg COeq/dry-ton</td></tr>`;
+  if (CALC_MODE !== 'ggl') {
+    html += `
     <tr><td colspan="3" style="color:#9ca3af">${Lrow.epDry2}</td><td></td><td class="c-purple" style="font-weight:600">${fmt(epFad,5)}</td><td style="color:#9ca3af;font-size:11px">kg COeq/dry-ton</td></tr>
     <tr><td colspan="3" style="color:#9ca3af">${Lrow.epAlloc1}</td><td></td><td class="c-green" style="font-weight:600">${fmt(epRpomeAlloc,5)}</td><td style="color:#9ca3af;font-size:11px">kg COeq/dry-ton</td></tr>
     <tr><td colspan="3" style="color:#9ca3af;padding-bottom:8px">${Lrow.epAlloc2}</td><td></td><td class="c-purple" style="font-weight:600">${fmt(epFadAlloc,5)}</td><td style="color:#9ca3af;font-size:11px">kg COeq/dry-ton</td></tr>`;
+  } else {
+    html += '';
+  }
   if (CALC_MODE === 'biodiesel') {
     html += `<tr><td colspan="3" style="color:#9ca3af;padding-bottom:8px">Ep (allocated) — g CO₂eq/MJ PME</td><td></td><td class="c-amber" style="font-weight:600">${fmt(epMj,5)}</td><td style="color:#9ca3af;font-size:11px">g CO₂eq/MJ</td></tr>`;
   }
   html += '';
   document.getElementById('result-tbody').innerHTML = html;
   renderFormulas();
+  updateGglEtdEpHint();
 }
 
 /* 
@@ -1101,7 +1219,7 @@ function fetchEtdLog() {
 }
 
 function saveToSheet() {
-  if (!CALC_MODE) { showToast('Buka kalkulator dari menu overview dulu', 'error'); return; }
+  if (!CALC_MODE) { showToast('Open a calculator from the overview first', 'error'); return; }
   if (!R.total) { showToast('Run a calculation first', 'error'); return; }
   const site = document.getElementById('sel-site').value.trim();
   if (!site) { showToast('Please specify a Site first!', 'error'); document.getElementById('sel-site').focus(); return; }
@@ -1261,7 +1379,7 @@ function renderHistory() {
   for (var i = 0; i < filtered.length; i++) {
     var h = filtered[i];
     var displayPeriod = String(h.period).replace(/[A-Za-z]+\s*/g, '').trim() || h.period;
-    var typeLabel = (h.calcType === 'biodiesel') ? 'Biodiesel' : (h.calcType === 'ggl') ? 'Processing GGL' : 'Refinery';
+    var typeLabel = (h.calcType === 'biodiesel') ? 'Biodiesel' : (h.calcType === 'ggl') ? 'GGL Cangkang' : 'Refinery';
     var epMjDisp = (h.calcType === 'biodiesel') ? fmt(h.epMj || 0, 2) : '—';
     rows += '<tr>'
       + '<td style="font-weight:500">'               + displayPeriod          + '</td>'
@@ -1312,6 +1430,7 @@ function closeExportModal(evt) {
 
 function triggerExcelDownload() {
   if (typeof XLSX === 'undefined') { alert('Excel library not loaded. Check your internet connection.'); return; }
+  if (excelExportIsBusy()) { showToast('Excel export already in progress…', 'error'); return; }
 
   var sel       = document.getElementById('modal-export-site');
   var filterVal = sel ? sel.value : 'all';
@@ -1359,7 +1478,7 @@ function triggerExcelDownload() {
   for (var i = 0; i < filtered.length; i++) {
     var h  = filtered[i];
     var yr = String(h.period).replace(/[A-Za-z]+\s*/g,'').trim() || h.period;
-    var typ = (h.calcType === 'biodiesel') ? 'Biodiesel' : (h.calcType === 'ggl') ? 'Processing GGL' : 'Refinery';
+    var typ = (h.calcType === 'biodiesel') ? 'Biodiesel' : (h.calcType === 'ggl') ? 'GGL Cangkang' : 'Refinery';
     var mj = (h.calcType === 'biodiesel') ? cellN(h.epMj || 0, 'num5') : cellS('—','txt');
     summaryRows += row(
       cellS(yr,'txt'), cellS(typ,'txt'), cellS(h.site||'','txt'),
@@ -1458,18 +1577,19 @@ function triggerExcelDownload() {
     detailSheets +
     '</Workbook>';
 
-  var blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
-  var sitePart = filterVal === 'all' ? 'All_Sites' : filterVal.replace(/\s+/g,'_');
-  a.href     = url;
-  a.download = 'GHG_Report_' + sitePart + '_' + new Date().getFullYear() + '.xls';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
-
-  showToast('Exported ' + filtered.length + ' records', 'success');
-  document.getElementById('export-modal').classList.remove('open');
+  runLockedExcel(function() {
+    var blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    var sitePart = filterVal === 'all' ? 'All_Sites' : filterVal.replace(/\s+/g,'_');
+    a.href     = url;
+    a.download = 'GHG_Report_' + sitePart + '_' + new Date().getFullYear() + '.xls';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+    showToast('Exported ' + filtered.length + ' records', 'success');
+    document.getElementById('export-modal').classList.remove('open');
+  }, function(msg) { showToast(msg, 'error'); });
 }
 
 function updateResultSiteDropdown() {
@@ -1513,13 +1633,7 @@ function applyResultFilter() {
     return;
   }
 
-  // Pick the latest valid saved record for the selected site (not the first old one).
-  var bySite = ghgData.filter(function(h) { return h.site === site; });
-  var record = null;
-  for (var i = bySite.length - 1; i >= 0; i--) {
-    if ((parseFloat(bySite[i].total) || 0) > 0) { record = bySite[i]; break; }
-  }
-  if (!record && bySite.length) record = bySite[bySite.length - 1];
+  var record = getLatestGhgRecordForSite(site);
   if (!record || !record.detail) {
     showToast('No saved detail found for "' + site + '". Save a calculation first.', 'error');
     sel.value = 'all';
@@ -1532,6 +1646,26 @@ function applyResultFilter() {
 
   renderDetailRows(record.detail, record);
   renderFormulasSaved(record);
+  applySavedRecordSummary(record);
+}
+
+function getLatestGhgRecordForSite(site) {
+  var bySite = ghgData.filter(function(h) { return h.site === site; });
+  var record = null;
+  for (var i = bySite.length - 1; i >= 0; i--) {
+    if ((parseFloat(bySite[i].total) || 0) > 0) { record = bySite[i]; break; }
+  }
+  if (!record && bySite.length) record = bySite[bySite.length - 1];
+  return record;
+}
+
+function applySavedRecordSummary(record) {
+  if (!record) return;
+  st('res-total', fmt(record.total || 0, 2));
+  st('res-rpome', fmt(record.epRpome || 0, 2));
+  st('res-fad', fmt(record.epFad || 0, 2));
+  st('res-alloc', fmt(record.epRpomeAlloc || 0, 2));
+  st('res-epmj', fmt(record.epMj || 0, 4));
 }
 
 function renderDetailRows(rows, record) {
@@ -1569,7 +1703,13 @@ function renderDetailRows(rows, record) {
   document.getElementById('result-tbody').innerHTML = html;
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+var refineryCalcUiReady = false;
+
+function initRefineryCalcApp() {
+  if (refineryCalcUiReady) return;
+  if (!document.getElementById('calc-app-wrap')) return;
+  refineryCalcUiReady = true;
+
   syncItemCatalog();
   rebuildItemSelect();
   updateResultSiteDropdown();
@@ -1581,6 +1721,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var xlsBtn = document.getElementById('btn-export-ttp-xlsx');
   if (xlsBtn) {
     xlsBtn.addEventListener('click', function () {
+      if (excelExportIsBusy()) { showToast('Excel export already in progress…', 'error'); return; }
       var rows   = getExportRows();
       var site   = currentFilterSite === 'all' ? (document.getElementById('sel-site').value.trim() || 'N/A') : currentFilterSite;
       var year   = currentFilterSite === 'all' ? (String(document.getElementById('sel-year').value).trim() || new Date().getFullYear()) : currentFilterYear;
@@ -1644,14 +1785,16 @@ document.addEventListener('DOMContentLoaded', function () {
         + '<WorksheetOptions><FreezePanes/><FrozenNoSplit/><SplitHorizontal>2</SplitHorizontal><TopRowBottomPane>2</TopRowBottomPane></WorksheetOptions>\n'
         + '</Worksheet>\n</Workbook>';
 
-      var blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
-      var url  = URL.createObjectURL(blob);
-      var a    = document.createElement('a');
-      a.href = url;
-      a.download = 'GHG_EpDetail_' + site.replace(/\s+/g,'_') + '_' + year + '.xls';
-      document.body.appendChild(a); a.click();
-      setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
-      showToast('Excel exported \u2192 ' + a.download, 'success');
+      runLockedExcel(function() {
+        var blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        a.href = url;
+        a.download = 'GHG_EpDetail_' + site.replace(/\s+/g,'_') + '_' + year + '.xls';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+        showToast('Excel exported \u2192 ' + a.download, 'success');
+      }, function(msg) { showToast(msg, 'error'); });
     });
   }
 
@@ -1660,7 +1803,7 @@ document.addEventListener('DOMContentLoaded', function () {
     pdfBtn.addEventListener('click', function () {
       var rows = getExportRows();
       if (!rows.length) { showToast('No data to export. Run or select a calculation first.', 'error'); return; }
-      if (typeof html2pdf === 'undefined') { showToast('PDF library not loaded. Check internet connection.', 'error'); return; }
+      if (!html2pdfIsReady()) { showToast('PDF library not loaded. Check internet connection.', 'error'); return; }
 
       var site = currentFilterSite === 'all' ? (document.getElementById('sel-site').value.trim() || 'N/A') : currentFilterSite;
       var year = currentFilterSite === 'all' ? (String(document.getElementById('sel-year').value).trim() || new Date().getFullYear()) : currentFilterYear;
@@ -1693,15 +1836,11 @@ document.addEventListener('DOMContentLoaded', function () {
       var pdfSub = modeLabels().pdfSubtitle;
       var isBiodieselPdf = (CALC_MODE === 'biodiesel');
       var isGglPdf = (CALC_MODE === 'ggl');
-      if (currentFilterSite !== 'all') {
-        for (var hi = 0; hi < ghgData.length; hi++) {
-          if (ghgData[hi].site === currentFilterSite) {
-            isBiodieselPdf = ghgData[hi].calcType === 'biodiesel';
-            isGglPdf = ghgData[hi].calcType === 'ggl';
-            pdfSub = isBiodieselPdf ? 'Biodiesel · PME/CG' : (isGglPdf ? 'Processing GGL' : 'Refinery POME');
-            break;
-          }
-        }
+      var histRec = currentFilterSite !== 'all' ? getLatestGhgRecordForSite(currentFilterSite) : null;
+      if (histRec) {
+        isBiodieselPdf = histRec.calcType === 'biodiesel';
+        isGglPdf = histRec.calcType === 'ggl';
+        pdfSub = isBiodieselPdf ? 'Biodiesel · PME/CG' : (isGglPdf ? 'GGL Cangkang' : 'Refinery POME');
       }
 
       function readNumText(id, decimals) {
@@ -1711,12 +1850,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!isFinite(n)) return '—';
         return fmtN(n, decimals == null ? 4 : decimals);
       }
-      var selectedHist = null;
-      if (currentFilterSite !== 'all') {
-        for (var hs = 0; hs < ghgData.length; hs++) {
-          if (ghgData[hs].site === currentFilterSite) { selectedHist = ghgData[hs]; break; }
-        }
-      }
+      var selectedHist = currentFilterSite !== 'all' ? getLatestGhgRecordForSite(currentFilterSite) : null;
       var rawHist = selectedHist && selectedHist.raw ? selectedHist.raw : {};
 
       // Force stream labels from the actual record's calcType (not current CALC_MODE)
@@ -1871,7 +2005,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
       var pdfArea = document.getElementById('pdf-print-area');
       pdfArea.innerHTML = pdfHtml;
-      pdfArea.className = isBiodieselPdf ? 'pdf-print-area biodiesel-pdf' : 'pdf-print-area refinery-pdf';
+      pdfArea.className = isBiodieselPdf
+        ? 'pdf-print-area biodiesel-pdf'
+        : (isGglPdf ? 'pdf-print-area refinery-pdf ggl-pdf' : 'pdf-print-area refinery-pdf');
 
       var filename = 'GHG_Report_' + site.replace(/\s+/g,'_') + '_' + year + '.pdf';
       pdfBtn.textContent = 'Generating…';
@@ -1887,6 +2023,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // always fits on one page without getting pushed to a page 2.
         jsPDF:       { unit: 'mm', format: [297, 400], orientation: 'portrait' },
         pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
+      }, {
+        onBusy: function(msg) { showToast(msg, 'error'); }
       }).then(function() {
         pdfBtn.textContent = ' Export PDF';
         pdfBtn.disabled = false;
@@ -1894,25 +2032,43 @@ document.addEventListener('DOMContentLoaded', function () {
       }).catch(function(err) {
         pdfBtn.textContent = ' Export PDF';
         pdfBtn.disabled = false;
-        showToast('PDF error: ' + err.message, 'error');
+        releasePdfExportLock('pdf');
+        showToast('PDF error: ' + (err && err.message ? err.message : err), 'error');
       });
     });
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initRefineryCalcApp);
+} else {
+  initRefineryCalcApp();
+}
 
 function getExportRows() {
   var sel  = document.getElementById('result-site-filter');
   var site = sel ? sel.value : 'all';
 
   if (site !== 'all') {
-    for (var i = 0; i < ghgData.length; i++) {
-      if (ghgData[i].site === site && ghgData[i].detail) return ghgData[i].detail;
+    if (currentDetailRows && currentDetailRows.length && currentFilterSite === site) {
+      return currentDetailRows;
     }
-    return [];
+    var savedRec = getLatestGhgRecordForSite(site);
+    return (savedRec && savedRec.detail) ? savedRec.detail : [];
   }
 
   if (!R || !R.total || !CALC_MODE) return [];
   var Lx = modeLabels();
+  if (CALC_MODE === 'ggl') {
+    return [
+      { type:'cat',  description:'A. Emissions Bio Solar' },
+      { type:'item', description:'Bio Solar', value:g('r-biosolar'), ef:GGL_PROCESSING.biosolar_ef, uom:'Liter (×0.815×0.7×EF)', result:R.biosolarCo2 || 0, ref:'SK Dirjen Migas · Ecoinvent 3.7' },
+      { type:'cat',  description:'B. Emissions Electricity' },
+      { type:'item', description:'Electricity', value:g('r-elec'), ef:GGL_PROCESSING.elec_ef, uom:'kg CO\u2082eq/kWh', result:R.elec, ref:'Grid Sumatera 2019' },
+      { type:'total', description:'Sum of Process Emissions', result:R.total },
+      { type:'ep',    description: Lx.epDry1, result:R.epRpome, uom:'kg CO\u2082eq/dry-ton' },
+    ];
+  }
   var out = [
     { type:'cat',  description:'A. Emissions Fuel' },
     { type:'item', description:'Coal',            value:g('r-coal'),     ef:EF.coal,     uom:'kg CO\u2082eq / Kg',  result:R.coal,     ref:REFS.coal     },
@@ -1979,10 +2135,15 @@ function resetForm(){
 
 function switchTab(tab, el) {
   document.querySelectorAll('#calc-app-wrap .page').forEach(function(p) { p.classList.remove('active'); });
-  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-  document.getElementById('page-' + tab).classList.add('active');
-  el.classList.add('active');
+  document.querySelectorAll('#calc-main-tabs .tab').forEach(function(t) { t.classList.remove('active'); });
+  var page = document.getElementById('page-' + tab);
+  if (page) page.classList.add('active');
+  if (el) el.classList.add('active');
   if (tab === 'history') fetchHistory();
+  if (tab === 'etd') {
+    if (typeof refreshEtdDestinationOptions === 'function') refreshEtdDestinationOptions();
+    updateGglEtdEpHint();
+  }
 }
 
 function showToast(msg,type='success'){

@@ -1,5 +1,5 @@
-/* Shared PDF export — jsPDF + autoTable only (no DOM / no html2pdf) */
-var ghgPdfExportLocks = { calc: false, savings: false };
+/* Shared export guards — jsPDF (GHG Savings) + html2pdf (Refinery / ETD / Traceability) */
+var ghgPdfExportLocks = { pdf: false, excel: false, savings: false };
 
 function acquirePdfExportLock(key) {
   if (ghgPdfExportLocks[key]) return false;
@@ -9,6 +9,86 @@ function acquirePdfExportLock(key) {
 
 function releasePdfExportLock(key) {
   ghgPdfExportLocks[key] = false;
+}
+
+function pdfExportIsBusy() {
+  return !!ghgPdfExportLocks.pdf;
+}
+
+function excelExportIsBusy() {
+  return !!ghgPdfExportLocks.excel;
+}
+
+function html2pdfIsReady() {
+  return typeof html2pdf !== 'undefined';
+}
+
+/** Fonts + two paint frames before html2canvas (prevents blank first export). */
+function exportWaitForPaint(delayMs) {
+  var delay = typeof delayMs === 'number' ? delayMs : 80;
+  var fontsReady;
+  try {
+    fontsReady = (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function')
+      ? document.fonts.ready
+      : Promise.resolve();
+  } catch (e) {
+    fontsReady = Promise.resolve();
+  }
+  return fontsReady.then(function() {
+    return new Promise(function(resolve) {
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          setTimeout(resolve, delay);
+        });
+      });
+    });
+  }).catch(function() {
+    return new Promise(function(resolve) {
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          setTimeout(resolve, delay);
+        });
+      });
+    });
+  });
+}
+
+/**
+ * Single global mutex for all html2pdf exports (Refinery, ETD, Traceability).
+ * GHG Savings uses jsPDF directly and keeps its own "savings" lock.
+ */
+function runLockedHtml2Pdf(taskFn, opts) {
+  opts = opts || {};
+  if (!html2pdfIsReady()) {
+    return Promise.reject(new Error('html2pdf library not loaded'));
+  }
+  if (!acquirePdfExportLock('pdf')) {
+    var busyMsg = opts.busyMessage || 'PDF export already in progress';
+    if (typeof opts.onBusy === 'function') opts.onBusy(busyMsg);
+    return Promise.reject(new Error(busyMsg));
+  }
+  var warmup = typeof opts.warmupMs === 'number' ? opts.warmupMs : 80;
+  return exportWaitForPaint(warmup)
+    .then(function() {
+      var result = taskFn();
+      if (result && typeof result.then === 'function') return result;
+      return Promise.resolve(result);
+    })
+    .finally(function() { releasePdfExportLock('pdf'); });
+}
+
+/** Prevents double-click / overlapping Excel downloads. */
+function runLockedExcel(fn, onBusy) {
+  if (!acquirePdfExportLock('excel')) {
+    if (typeof onBusy === 'function') onBusy('Excel export already in progress');
+    return false;
+  }
+  try {
+    fn();
+    return true;
+  } finally {
+    releasePdfExportLock('excel');
+  }
 }
 
 function pdfGetJsPDF() {

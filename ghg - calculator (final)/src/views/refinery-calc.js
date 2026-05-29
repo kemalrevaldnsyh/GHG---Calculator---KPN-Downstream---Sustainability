@@ -15,8 +15,9 @@ export const refineryCalcView = `<div class="page" id="calc-app-wrap">
   </div>
 </div>
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('input',this)">Input</button>
+<div class="tabs" id="calc-main-tabs">
+  <button class="tab active" onclick="switchTab('input',this)">Processing</button>
+  <button class="tab" id="tab-etd" style="display:none" onclick="switchTab('etd',this)">ETD</button>
   <button class="tab" onclick="switchTab('result',this)">Results</button>
   <button class="tab" onclick="switchTab('history',this)">History</button>
 </div>
@@ -98,8 +99,8 @@ export const refineryCalcView = `<div class="page" id="calc-app-wrap">
       <div>
         <div class="section-title">AF & FF — Allocation Factors</div>
         <div class="card">
-          <div class="card-header"><div class="card-header-title" id="lbl-af-feedstock">POME</div><div class="card-header-sub" id="lbl-af-feedstock-sub">Input material</div></div>
-          <div class="card-body"><div class="grid g3">
+          <div class="card-header" id="af-pome-block"><div class="card-header-title" id="lbl-af-feedstock">POME</div><div class="card-header-sub" id="lbl-af-feedstock-sub">Input material</div></div>
+          <div class="card-body" id="af-pome-body"><div class="grid g3">
             <div class="field"><label>Value (MT)</label><div class="input-wrap"><input type="number" id="af-pome-val" placeholder="0" oninput="calculateAF()"><span class="input-unit">MT</span></div></div>
             <div class="field"><label>Moisture (%)</label><div class="input-wrap"><input type="number" id="af-pome-mc" value="1.1" oninput="calculateAF()"><span class="input-unit">%</span></div></div>
             <div class="field"><label>Processed (dry)</label><div class="input-wrap"><input type="text" id="af-pome-dry" class="ro" readonly><span class="input-unit">MT</span></div></div>
@@ -115,8 +116,8 @@ export const refineryCalcView = `<div class="page" id="calc-app-wrap">
             <div class="field"><label>FF</label><div class="input-wrap"><input type="text" id="af-rpome-ff" class="ro" readonly><span class="input-unit">—</span></div></div>
           </div></div>
 
-          <div class="card-header"><div class="card-header-title" id="lbl-af-stream2">POME FAD</div><div class="card-header-sub" id="lbl-af-stream2-lhv">LHV 37 MJ/kg</div></div>
-          <div class="card-body"><div class="grid g3">
+          <div class="card-header" id="af-stream2-block"><div class="card-header-title" id="lbl-af-stream2">POME FAD</div><div class="card-header-sub" id="lbl-af-stream2-lhv">LHV 37 MJ/kg</div></div>
+          <div class="card-body" id="af-stream2-body"><div class="grid g3">
             <div class="field"><label>Produced (MT)</label><div class="input-wrap"><input type="number" id="af-fad-val" placeholder="0" oninput="calculateAF()"><span class="input-unit">MT</span></div></div>
             <div class="field"><label>Moisture (%)</label><div class="input-wrap"><input type="number" id="af-fad-mc" value="0.33" oninput="calculateAF()"><span class="input-unit">%</span></div></div>
             <div class="field"><label>Produced (dry)</label><div class="input-wrap"><input type="text" id="af-fad-dry" class="ro" readonly><span class="input-unit">MT</span></div></div>
@@ -128,9 +129,10 @@ export const refineryCalcView = `<div class="page" id="calc-app-wrap">
 
         <div class="section-title">Live Result</div>
         <div class="card"><div class="card-body">
+          <div class="calc-row" id="row-p-ggl-fuel" style="display:none"><span class="cr-label">A. Bio Solar</span><span class="cr-val" id="p-ggl-fuel">—</span></div>
           <div class="calc-row" id="row-p-fuel"><span class="cr-label">A. Fuel</span><span class="cr-val" id="p-fuel">—</span></div>
           <div class="calc-row" id="row-p-chem"><span class="cr-label">B. Chemical</span><span class="cr-val" id="p-chem">—</span></div>
-          <div class="calc-row" id="row-p-elec"><span class="cr-label">C. Electricity</span><span class="cr-val" id="p-elec">—</span></div>
+          <div class="calc-row" id="row-p-elec"><span class="cr-label" id="lbl-p-elec">C. Electricity</span><span class="cr-val" id="p-elec">—</span></div>
           <div class="calc-row" id="row-p-solar" style="display:none"><span class="cr-label">D. Solar</span><span class="cr-val" id="p-solar">—</span></div>
           <div class="calc-row" id="row-p-water"><span class="cr-label">D. Water</span><span class="cr-val" id="p-water">—</span></div>
           <hr>
@@ -140,11 +142,80 @@ export const refineryCalcView = `<div class="page" id="calc-app-wrap">
           </div>
           <hr>
           <div class="calc-row"><span class="cr-label" id="lbl-p-ep1">Ep / dry-ton RPOME</span><span class="cr-val c-green" id="p-ep-rpome">—</span></div>
-          <div class="calc-row"><span class="cr-label" id="lbl-p-ep2">Ep / dry-ton POME FAD</span><span class="cr-val c-purple" id="p-ep-fad">—</span></div>
-          <div class="calc-row"><span class="cr-label" id="lbl-p-epa1">Ep Allocated RPOME</span><span class="cr-val c-green" id="p-ep-rpome-alloc">—</span></div>
-          <div class="calc-row"><span class="cr-label" id="lbl-p-epa2">Ep Allocated POME FAD</span><span class="cr-val c-purple" id="p-ep-fad-alloc">—</span></div>
+          <div class="calc-row" id="col-p-ep2"><span class="cr-label" id="lbl-p-ep2">Ep / dry-ton POME FAD</span><span class="cr-val c-purple" id="p-ep-fad">—</span></div>
+          <div class="calc-row" id="col-p-epa1"><span class="cr-label" id="lbl-p-epa1">Ep Allocated RPOME</span><span class="cr-val c-green" id="p-ep-rpome-alloc">—</span></div>
+          <div class="calc-row" id="col-p-epa2"><span class="cr-label" id="lbl-p-epa2">Ep Allocated POME FAD</span><span class="cr-val c-purple" id="p-ep-fad-alloc">—</span></div>
           <div class="calc-row" id="row-ep-mj" style="display:none"><span class="cr-label">Ep (allocated) — g CO₂eq/MJ PME</span><span class="cr-val c-amber" id="p-ep-mj">—</span></div>
         </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-etd">
+    <div id="ggl-etd-inner" class="etd-shell">
+      <div class="container">
+
+        <div class="etd-block-header">
+          <h1 id="ggl-etd-block-title">GHG Emission Calculator — GGL</h1>
+          <p id="ggl-etd-block-sub">Transportation &amp; Processing Emissions · Cangkang</p>
+          <div class="badge" id="ggl-etd-block-badge">GGL</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Input Data</div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Period</label>
+              <input type="text" id="ggl-etd-period" placeholder="e.g. 2026"/>
+            </div>
+            <div class="form-field full">
+              <label>Supplier Name</label>
+              <input type="text" id="ggl-supplier" placeholder="Type Supplier Name"/>
+            </div>
+            <div class="form-field full">
+              <label>Destination</label>
+              <select id="ggl-destination"></select>
+            </div>
+            <div class="form-field">
+              <label>Trucking Distance (km)</label>
+              <input type="number" id="ggl-dist-truck" placeholder="Insert Trucking Distance" step="0.01" min="0" oninput="updateModeHint()"/>
+            </div>
+            <div class="form-field">
+              <label>Vessel Distance 1 (km)</label>
+              <input type="number" id="ggl-dist-vessel" placeholder="Insert Vessel Distance 1" step="0.01" min="0" oninput="updateModeHint()"/>
+            </div>
+            <div class="form-field full">
+              <label>Vessel Distance 2 — Bulking (km) <span style="font-weight:400;color:var(--text3)">Fill in if there is a 2-leg vessel route</span></label>
+              <input type="number" id="ggl-dist-vessel2" placeholder="Insert Vessel Distance 2 (Optional)" step="0.01" min="0" oninput="updateModeHint()"/>
+            </div>
+          </div>
+          <div id="ggl-mode-hint" class="mode-hint" style="display:none"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-calculate" onclick="etdCalculate()">Calculate Emmision</button>
+            <button class="btn-calculate" style="background:#111827" onclick="saveETDToSheet()">Save ETD</button>
+          </div>
+        </div>
+
+        <div id="ggl-etd-results" class="card">
+          <div class="result-header">
+            <div class="result-supplier" id="ggl-r-supplier">—</div>
+            <div class="result-meta" id="ggl-r-meta">—</div>
+          </div>
+          <div class="summary-grid" id="ggl-r-summary"></div>
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th></th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody id="ggl-r-tbody"></tbody>
+          </table>
+          <div class="fob-grid" id="ggl-r-fob"></div>
+          <div class="factors-grid" id="ggl-r-factors"></div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -154,8 +225,8 @@ export const refineryCalcView = `<div class="page" id="calc-app-wrap">
     <div class="summary-grid summary-grid-5" id="summary-grid-main">
       <div class="rs-card"><div class="rs-label">Total Ep</div><div class="rs-value c-blue" id="res-total">—</div><div class="rs-unit">kg COeq</div></div>
       <div class="rs-card"><div class="rs-label" id="lbl-res-ep1">Ep / dry-ton RPOME</div><div class="rs-value c-green" id="res-rpome">—</div><div class="rs-unit">kg COeq / dry-ton</div></div>
-      <div class="rs-card"><div class="rs-label" id="lbl-res-ep2">Ep / dry-ton FAD</div><div class="rs-value c-purple" id="res-fad">—</div><div class="rs-unit">kg COeq / dry-ton</div></div>
-      <div class="rs-card"><div class="rs-label" id="lbl-res-alloc">Ep Allocated RPOME</div><div class="rs-value c-amber" id="res-alloc">—</div><div class="rs-unit">kg COeq / dry-ton</div></div>
+      <div class="rs-card" id="card-res-ep2"><div class="rs-label" id="lbl-res-ep2">Ep / dry-ton FAD</div><div class="rs-value c-purple" id="res-fad">—</div><div class="rs-unit">kg COeq / dry-ton</div></div>
+      <div class="rs-card" id="card-res-alloc"><div class="rs-label" id="lbl-res-alloc">Ep Allocated RPOME</div><div class="rs-value c-amber" id="res-alloc">—</div><div class="rs-unit">kg COeq / dry-ton</div></div>
       <div class="rs-card" id="card-res-epmj" style="display:none"><div class="rs-label">Ep (g CO₂eq/MJ PME)</div><div class="rs-value c-amber" id="res-epmj">—</div><div class="rs-unit">g CO₂eq / MJ</div></div>
     </div>
 
@@ -189,7 +260,7 @@ export const refineryCalcView = `<div class="page" id="calc-app-wrap">
           <div class="formula-box">
             <div class="formula-title">Per item (value × EF)</div>
             <div id="formula-items"></div>
-            <div class="formula-hint">Note: item list mengikuti item yang kamu tambah di tab Input.</div>
+            <div class="formula-hint">Note: item list follows items you add on the Processing tab.</div>
           </div>
         </div>
       </div>

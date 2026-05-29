@@ -17,52 +17,48 @@
      guarantee at least one full browser paint cycle before capture.
    - Make element visible only during capture, invisible after.
    ══════════════════════════════════════════════════════════════ */
-function safePdfExport(el, opts) {
-  return new Promise(function(resolve, reject) {
-    if (typeof html2pdf === 'undefined') {
-      reject(new Error('html2pdf library not loaded'));
-      return;
-    }
+function safePdfExport(el, opts, lockOpts) {
+  opts = opts || {};
+  return runLockedHtml2Pdf(function() {
+    return new Promise(function(resolve, reject) {
+      var widthCss = '277mm';
+      var container = document.createElement('div');
+      container.setAttribute('data-pdf-export-clone', '1');
+      container.style.cssText = [
+        'position:fixed',
+        'top:0',
+        'left:0',
+        'z-index:-1',
+        'opacity:0.001',
+        'pointer-events:none',
+        'background:#ffffff',
+        'width:' + widthCss,
+        'overflow:visible'
+      ].join(';');
 
-    var classes = el.className || '';
-    var w = el.style.width || '';
-    var style = 'background:#fff;' + (w ? 'width:' + w + ';' : '');
-    var htmlStr = '<div class="' + classes + '" style="' + style + '">'
-                + el.innerHTML + '</div>';
+      var inner = document.createElement('div');
+      inner.className = el.className || 'pdf-print-area';
+      inner.style.cssText = 'background:#ffffff;width:' + widthCss + ';box-sizing:border-box;';
+      inner.innerHTML = el.innerHTML;
+      container.appendChild(inner);
+      document.body.appendChild(container);
 
-    el.className = '';
+      function cleanup() {
+        if (container && container.parentNode) container.parentNode.removeChild(container);
+      }
 
-    // Warmup: wait for web fonts + two paint cycles before invoking html2pdf.
-    // Without this, the FIRST export after the page opens can capture a blank/partial
-    // render because Google Fonts / layout haven't committed yet.
-    var fontsReady;
-    try {
-      fontsReady = (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function')
-        ? document.fonts.ready
-        : Promise.resolve();
-    } catch (e) {
-      fontsReady = Promise.resolve();
-    }
-
-    fontsReady.then(function() {
       requestAnimationFrame(function() {
         requestAnimationFrame(function() {
-          setTimeout(function() {
-            html2pdf().set(opts).from(htmlStr, 'string').save()
-              .then(function() { resolve(); })
-              .catch(function(err) { reject(err); });
-          }, 80);
+          html2pdf()
+            .set(opts)
+            .from(inner)
+            .save()
+            .then(function() { cleanup(); resolve(); })
+            .catch(function(err) { cleanup(); reject(err); });
         });
       });
-    }).catch(function() {
-      // If fonts.ready rejects for any reason, still attempt the export.
-      setTimeout(function() {
-        html2pdf().set(opts).from(htmlStr, 'string').save()
-          .then(function() { resolve(); })
-          .catch(function(err) { reject(err); });
-      }, 80);
     });
-  });
+  }, lockOpts || {});
 }
 
 /* 
@@ -82,80 +78,67 @@ function safePdfExportOnePage(el, opts) {
   var margin      = (typeof opts.margin === 'number') ? opts.margin : 6; // mm
   var scale       = opts.scale || 2;
 
-  return new Promise(function(resolve, reject) {
-    if (typeof html2pdf === 'undefined') {
-      reject(new Error('html2pdf library not loaded'));
-      return;
-    }
+  return runLockedHtml2Pdf(function() {
+    return new Promise(function(resolve, reject) {
+      var widthCss = el.style.width || '277mm';
+      var container = document.createElement('div');
+      container.style.cssText = 'position:fixed;top:0;left:0;z-index:-1;opacity:0;' +
+        'pointer-events:none;background:#ffffff;width:' + widthCss + ';padding:0;margin:0';
+      var inner = document.createElement('div');
+      inner.className = el.className || '';
+      inner.style.cssText = 'background:#ffffff;width:' + widthCss;
+      inner.innerHTML = el.innerHTML;
+      container.appendChild(inner);
+      document.body.appendChild(container);
 
-    // Clone content into a fully-visible offscreen container so the renderer can
-    // capture cleanly even if the source is position:absolute / left:-9999px / hidden.
-    var widthCss = el.style.width || '277mm';
-    var container = document.createElement('div');
-    container.style.cssText = 'position:fixed;top:0;left:0;z-index:-1;opacity:0;' +
-      'pointer-events:none;background:#ffffff;width:' + widthCss + ';padding:0;margin:0';
-    var inner = document.createElement('div');
-    inner.className = el.className || '';
-    inner.style.cssText = 'background:#ffffff;width:' + widthCss;
-    inner.innerHTML = el.innerHTML;
-    container.appendChild(inner);
-    document.body.appendChild(container);
+      function cleanup() {
+        if (container && container.parentNode) container.parentNode.removeChild(container);
+      }
 
-    function cleanup() {
-      if (container && container.parentNode) container.parentNode.removeChild(container);
-    }
+      try {
+        var worker = html2pdf().set({
+          margin:      0,
+          filename:    filename,
+          image:       { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: scale, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
+          jsPDF:       { unit: 'mm', format: format, orientation: orientation, compress: true }
+        }).from(inner);
 
-    var readyPromise = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-    readyPromise.then(function() {
-      requestAnimationFrame(function() {
-        setTimeout(function() {
+        worker.toCanvas().toPdf().then(function() {
           try {
-            var worker = html2pdf().set({
-              margin:      0,
-              filename:    filename,
-              image:       { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: scale, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
-              jsPDF:       { unit: 'mm', format: format, orientation: orientation, compress: true }
-            }).from(inner);
+            var canvas   = worker.prop && worker.prop.canvas;
+            var pdfInst  = worker.prop && worker.prop.pdf;
+            if (!canvas || !pdfInst) throw new Error('PDF renderer did not produce output');
 
-            // Run the capture + pdf build pipeline, then rebuild onto a single page.
-            worker.toCanvas().toPdf().then(function() {
-              try {
-                var canvas   = worker.prop && worker.prop.canvas;
-                var pdfInst  = worker.prop && worker.prop.pdf;
-                if (!canvas || !pdfInst) throw new Error('PDF renderer did not produce output');
-
-                var JsPdfCtor = pdfInst.constructor;
-                var pdf = new JsPdfCtor({ unit: 'mm', format: format, orientation: orientation, compress: true });
-                var pageW = pdf.internal.pageSize.getWidth();
-                var pageH = pdf.internal.pageSize.getHeight();
-                var availW = pageW - 2 * margin;
-                var availH = pageH - 2 * margin;
-                var cssW = canvas.width  / scale;
-                var cssH = canvas.height / scale;
-                var ratio = Math.min(availW / cssW, availH / cssH);
-                var imgW = cssW * ratio;
-                var imgH = cssH * ratio;
-                var offX = (pageW - imgW) / 2;
-                var offY = margin;
-                var imgData = canvas.toDataURL('image/jpeg', 0.98);
-                pdf.addImage(imgData, 'JPEG', offX, offY, imgW, imgH, undefined, 'FAST');
-                pdf.save(filename);
-                cleanup();
-                resolve();
-              } catch (e) {
-                cleanup();
-                reject(e);
-              }
-            }).catch(function(err) { cleanup(); reject(err); });
+            var JsPdfCtor = pdfInst.constructor;
+            var pdf = new JsPdfCtor({ unit: 'mm', format: format, orientation: orientation, compress: true });
+            var pageW = pdf.internal.pageSize.getWidth();
+            var pageH = pdf.internal.pageSize.getHeight();
+            var availW = pageW - 2 * margin;
+            var availH = pageH - 2 * margin;
+            var cssW = canvas.width  / scale;
+            var cssH = canvas.height / scale;
+            var ratio = Math.min(availW / cssW, availH / cssH);
+            var imgW = cssW * ratio;
+            var imgH = cssH * ratio;
+            var offX = (pageW - imgW) / 2;
+            var offY = margin;
+            var imgData = canvas.toDataURL('image/jpeg', 0.98);
+            pdf.addImage(imgData, 'JPEG', offX, offY, imgW, imgH, undefined, 'FAST');
+            pdf.save(filename);
+            cleanup();
+            resolve();
           } catch (e) {
             cleanup();
             reject(e);
           }
-        }, 40);
-      });
+        }).catch(function(err) { cleanup(); reject(err); });
+      } catch (e) {
+        cleanup();
+        reject(e);
+      }
     });
-  });
+  }, { onBusy: opts.onBusy, busyMessage: opts.busyMessage });
 }
 
 /* 
@@ -171,6 +154,32 @@ const EF_BASE = {
   methanol:1.93, sodium_methylate:2.2077, citric_acid:0.87,
 };
 // Biodiesel-specific overrides (different source/standard vs Refinery)
+/** GGL Cangkang — constants from EUP Excel (Palembang, Bontang, Kumai, Lubuk Gaung) */
+const GGL_PROCESSING = {
+  biosolar_liter_to_kg: 0.815 * 0.7,
+  biosolar_ef: 0.56265,
+  elec_ef: 0.94,
+  cangkang_moisture_pct: 20,
+  cangkang_lhv: 37,
+};
+const GGL_ETD = {
+  h_truck: 0.87,
+  h_vessel: 0.07,
+  EF_diesel: 0.095,
+  EF_B40: 0.095 * 0.6,
+  Mm_Md: 1.25,
+  destinations: {
+    PLM: { label: 'EUP Palembang', Ep: 0.58389374058265631 },
+    BTG: { label: 'EUP Bontang', Ep: 3.0817003485179981 },
+    KUM: { label: 'EUP Kumai', Ep: 0.24414969836428579 },
+    LBG: { label: 'EUP Lubuk Gaung', Ep: 0.91571517172963479 },
+  },
+};
+
+const EF_GGL_OVERRIDES = {
+  elec: GGL_PROCESSING.elec_ef,
+  biosolar: GGL_PROCESSING.biosolar_ef,
+};
 const EF_BIODIESEL_OVERRIDES = {
   na2co3: 1.190228, // EU Commission standard values (vs IR 996/2022 for Refinery)
 };
@@ -211,8 +220,8 @@ const ITEMS_REFINERY = {
 };
 
 const ITEMS_GGL = {
-  elec:  { label:'Electricity', group:'elec',  unit:'kWh', ef:'EF 1.1202 kg COeq/kWh', inputId:'r-elec' },
-  solar: { label:'Solar',       group:'solar', unit:'kWh', ef:'EF 0.054 kg COeq/kWh',  inputId:'r-solar' },
+  biosolar: { label:'Bio Solar', group:'fuel', unit:'Liter', ef:'Liter×0.815×0.7×EF 0.56265', inputId:'r-biosolar' },
+  elec:     { label:'Electricity', group:'elec', unit:'kWh', ef:'EF 0.94 kg COeq/kWh (Sumatera 2019)', inputId:'r-elec' },
 };
 
 const ITEMS_BIODIESEL_EXTRA = {
@@ -237,6 +246,9 @@ function syncItemCatalog() {
   if (CALC_MODE === 'biodiesel') {
     EF   = Object.assign({}, EF_BASE,   EF_BIODIESEL_OVERRIDES);
     REFS = Object.assign({}, REFS_BASE, REFS_BIODIESEL_OVERRIDES);
+  } else if (CALC_MODE === 'ggl') {
+    EF   = Object.assign({}, EF_BASE, EF_GGL_OVERRIDES);
+    REFS = Object.assign({}, REFS_BASE);
   } else {
     EF   = Object.assign({}, EF_BASE);
     REFS = Object.assign({}, REFS_BASE);
@@ -267,8 +279,8 @@ function rebuildItemSelect() {
     return h + '</optgroup>';
   }
   if (CALC_MODE === 'ggl') {
-    html += og('A. Electricity', groups.elec);
-    html += og('B. Solar', groups.solar);
+    html += og('A. Bio Solar (fuel)', groups.fuel);
+    html += og('B. Electricity', groups.elec);
     sel.innerHTML = html;
     return;
   }
@@ -283,16 +295,16 @@ function rebuildItemSelect() {
 function modeLabels() {
   if (CALC_MODE === 'ggl') {
     return {
-      stream1: 'RPOME', stream2: 'POME FAD',
-      stream1lhv: 'LHV 37 MJ/kg', stream2lhv: 'LHV 37 MJ/kg',
-      feedstock: 'POME', feedstockSub: 'Input material',
-      epDry1: 'Ep / dry-ton RPOME', epDry2: 'Ep / dry-ton POME FAD',
-      epAlloc1: 'Ep Allocated RPOME', epAlloc2: 'Ep Allocated POME FAD',
-      resEp1: 'Ep / dry-ton RPOME', resEp2: 'Ep / dry-ton FAD',
-      resAlloc: 'Ep Allocated RPOME',
-      pdfSubtitle: 'Processing GGL',
-      headerTitle: 'GHG Calculator — Processing GGL',
-      headerSub: 'Ep Processing · GGL',
+      stream1: 'CANGKANG', stream2: '—',
+      stream1lhv: 'LHV 37 MJ/kg', stream2lhv: '—',
+      feedstock: 'CANGKANG', feedstockSub: 'Processed (wet) · contract moisture 20%',
+      epDry1: 'Ep / dry-ton Cangkang', epDry2: '—',
+      epAlloc1: 'Ep / dry-ton Cangkang', epAlloc2: '—',
+      resEp1: 'Ep / dry-ton Cangkang', resEp2: '—',
+      resAlloc: 'Ep / dry-ton Cangkang',
+      pdfSubtitle: 'GGL Cangkang · Processing & ETD',
+      headerTitle: 'GHG Calculator — GGL Cangkang',
+      headerSub: 'Processing & ETD · Cangkang',
     };
   }
   if (CALC_MODE === 'biodiesel') {
@@ -353,23 +365,45 @@ function applyModeLabels() {
 
 function applyCalcPanelLayout() {
   var isGgl = CALC_MODE === 'ggl';
-  ['row-p-fuel', 'row-p-chem', 'row-p-water'].forEach(function(id) {
+  ['row-p-fuel', 'row-p-chem', 'row-p-water', 'row-p-solar'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = isGgl ? 'none' : '';
   });
-  var solarRow = document.getElementById('row-p-solar');
-  if (solarRow) solarRow.style.display = isGgl ? '' : 'none';
+  var gglFuel = document.getElementById('row-p-ggl-fuel');
+  if (gglFuel) gglFuel.style.display = isGgl ? '' : 'none';
+  var lblElec = document.getElementById('lbl-p-elec');
+  if (lblElec) lblElec.textContent = isGgl ? 'B. Electricity' : 'C. Electricity';
+  ['af-pome-block', 'af-pome-body', 'af-stream2-block', 'af-stream2-body', 'col-p-ep2', 'col-p-epa1', 'col-p-epa2', 'card-res-ep2', 'card-res-alloc'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = isGgl ? 'none' : '';
+  });
   var waterLabel = document.querySelector('#row-p-water .cr-label');
   if (waterLabel && !isGgl) waterLabel.textContent = 'D. Water';
+  if (isGgl) {
+    var mc = document.getElementById('af-rpome-mc');
+    if (mc && (mc.value === '0.05' || mc.value === '70' || !mc.value)) mc.value = String(GGL_PROCESSING.cangkang_moisture_pct);
+  }
+  var tabEtd = document.getElementById('tab-etd');
+  if (tabEtd) tabEtd.style.display = isGgl ? '' : 'none';
+}
+
+function openGGLMode() {
+  if (typeof ETD_VARIANT !== 'undefined') ETD_VARIANT = 'ggl';
+  openCalculatorMode('ggl');
+  if (typeof applyEtdBranding === 'function') applyEtdBranding();
 }
 
 function openCalculatorMode(mode) {
   if (mode === 'biodiesel') CALC_MODE = 'biodiesel';
-  else if (mode === 'ggl') CALC_MODE = 'ggl';
+  else if (mode === 'ggl') {
+    CALC_MODE = 'ggl';
+    if (typeof ETD_VARIANT !== 'undefined') ETD_VARIANT = 'ggl';
+  }
   else CALC_MODE = 'refinery';
   syncItemCatalog();
   rebuildItemSelect();
   applyModeLabels();
+  if (CALC_MODE === 'ggl' && typeof refreshEtdDestinationOptions === 'function') refreshEtdDestinationOptions();
   document.getElementById('page-landing').classList.remove('active');
   var etdWrap = document.getElementById('etd-app-wrap');
   if (etdWrap) etdWrap.classList.remove('active');
@@ -391,7 +425,7 @@ function openCalculatorMode(mode) {
   requestAnimationFrame(function() { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; });
   showToast(
     CALC_MODE === 'biodiesel' ? 'Mode: Biodiesel'
-      : CALC_MODE === 'ggl' ? 'Mode: Processing GGL'
+      : CALC_MODE === 'ggl' ? 'Mode: GGL Cangkang'
       : 'Mode: Refinery',
     'success'
   );

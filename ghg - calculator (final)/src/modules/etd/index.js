@@ -64,14 +64,79 @@ const C63 = 14.367511401255989; // LBG→BTG additional
 
 let currentDest = 'LBG';
 
+function etdDom(id) {
+  var map = {
+    supplier: 'ggl-supplier',
+    destination: 'ggl-destination',
+    dist_truck: 'ggl-dist-truck',
+    dist_vessel: 'ggl-dist-vessel',
+    dist_vessel2: 'ggl-dist-vessel2',
+    'etd-period': 'ggl-etd-period',
+    results: 'ggl-etd-results',
+    'r-supplier': 'ggl-r-supplier',
+    'r-meta': 'ggl-r-meta',
+    'r-summary': 'ggl-r-summary',
+    'r-tbody': 'ggl-r-tbody',
+    'r-fob': 'ggl-r-fob',
+    'r-factors': 'ggl-r-factors',
+    'mode-hint': 'ggl-mode-hint',
+  };
+  if (typeof CALC_MODE !== 'undefined' && CALC_MODE === 'ggl' && map[id]) {
+    var gglEl = document.getElementById(map[id]);
+    if (gglEl) return gglEl;
+  }
+  return document.getElementById(id);
+}
+
+function etdStatCardHtml(label, value, highlight) {
+  return '<div class="stat-card' + (highlight ? ' highlight' : '') + '">'
+    + '<div class="stat-label">' + label + '</div>'
+    + '<div class="stat-value">' + value.toFixed(2) + '</div>'
+    + '<div class="stat-unit">kgCO₂e/dry-t</div>'
+    + '</div>';
+}
+
+function etdBreakdownRowHtml(row) {
+  return '<tr>'
+    + '<td><div class="td-name">' + row.name + '</div><div class="td-formula">' + row.formula + '</div></td>'
+    + '<td></td>'
+    + '<td class="' + (row.val === null ? 'td-val na' : 'td-val') + '">'
+    + (row.val === null ? 'N/A' : row.val.toFixed(2))
+    + '</td></tr>';
+}
+
+function etdFobCardHtml(label, val, ep, primary) {
+  return '<div class="fob-card ' + (primary ? 'primary' : '') + '">'
+    + '<div class="fob-label">' + label + '</div>'
+    + '<div class="fob-value">' + val.toFixed(2) + '</div>'
+    + '<div class="fob-breakdown">Ep ' + ep.toFixed(2) + ' + Etd ' + (val - ep).toFixed(2) + '</div>'
+    + '</div>';
+}
+
+function paintEtdResultsView(getEl, data) {
+  getEl('r-supplier').textContent = data.supplier;
+  getEl('r-meta').textContent = data.meta;
+  getEl('r-summary').innerHTML = data.summaryHtml;
+  getEl('r-tbody').innerHTML = data.rows.map(etdBreakdownRowHtml).join('');
+  getEl('r-fob').innerHTML = data.fobHtml;
+  getEl('r-factors').innerHTML = data.factorsHtml;
+  var resultsEl = getEl('results');
+  resultsEl.style.display = 'block';
+  resultsEl.scrollIntoView({ behavior: 'smooth' });
+}
+
 function updateModeHint() {
-  const dt  = parseFloat(document.getElementById('dist_truck').value);
-  const dv1 = parseFloat(document.getElementById('dist_vessel').value);
-  const dv2 = parseFloat(document.getElementById('dist_vessel2').value);
+  var truckEl = etdDom('dist_truck');
+  var vesselEl = etdDom('dist_vessel');
+  var vessel2El = etdDom('dist_vessel2');
+  var hint = etdDom('mode-hint');
+  if (!truckEl || !vesselEl || !vessel2El || !hint) return;
+  const dt  = parseFloat(truckEl.value);
+  const dv1 = parseFloat(vesselEl.value);
+  const dv2 = parseFloat(vessel2El.value);
   const hasTruck   = !isNaN(dt)  && dt  > 0;
   const hasVessel1 = !isNaN(dv1) && dv1 > 0;
   const hasVessel2 = !isNaN(dv2) && dv2 > 0;
-  const hint = document.getElementById('mode-hint');
   if (!hasTruck && !hasVessel1 && !hasVessel2) { hint.style.display = 'none'; return; }
   hint.style.display = 'flex';
   if (hasTruck && hasVessel1 && hasVessel2) {
@@ -85,10 +150,10 @@ function updateModeHint() {
     hint.innerHTML = 'Mode: <strong>Bulking</strong> — Trucking ' + dt + ' km → Vessel ' + dv1 + ' km';
   } else if (hasTruck) {
     hint.className = 'mode-hint trucking';
-    hint.innerHTML = 'Mode: <strong>Direct Trucking</strong> — jarak ' + dt + ' km';
+    hint.innerHTML = 'Mode: <strong>Direct Trucking</strong> — ' + dt + ' km';
   } else {
     hint.className = 'mode-hint vessel';
-    hint.innerHTML = 'Mode: <strong>Direct Vessel</strong> — jarak ' + dv1 + ' km';
+    hint.innerHTML = 'Mode: <strong>Direct Vessel</strong> — ' + dv1 + ' km';
   }
 }
 
@@ -124,7 +189,214 @@ function saveFactors() {
   }
 }
 
+function etdCalculateGgl() {
+  const G = (typeof GGL_ETD !== 'undefined') ? GGL_ETD : {
+    h_truck: 0.87, h_vessel: 0.07, EF_B40: 0.095 * 0.6, Mm_Md: 1.25,
+    destinations: {
+      PLM: { label: 'EUP Palembang', Ep: 0.58389374058265631 },
+      BTG: { label: 'EUP Bontang', Ep: 3.0817003485179981 },
+      KUM: { label: 'EUP Kumai', Ep: 0.24414969836428579 },
+      LBG: { label: 'EUP Lubuk Gaung', Ep: 0.91571517172963479 },
+    }
+  };
+
+  const supplier = etdDom('supplier').value.trim() || '—';
+  const dest = etdDom('destination').value;
+  const d = G.destinations[dest];
+  if (!d) {
+    alert('Please select a valid GGL EUP destination (Palembang, Bontang, Kumai, or Lubuk Gaung).');
+    return;
+  }
+
+  const dtRaw  = parseFloat(etdDom('dist_truck').value);
+  const dv1Raw = parseFloat(etdDom('dist_vessel').value);
+  const dv2Raw = parseFloat(etdDom('dist_vessel2').value);
+
+  const hasTruck   = !isNaN(dtRaw)  && dtRaw  > 0;
+  const hasVessel1 = !isNaN(dv1Raw) && dv1Raw > 0;
+  const hasVessel2 = !isNaN(dv2Raw) && dv2Raw > 0;
+
+  if (!hasTruck && !hasVessel1 && !hasVessel2) {
+    alert('Enter at least one distance (Trucking or Vessel)!');
+    return;
+  }
+
+  const dist_truck   = hasTruck   ? dtRaw  : 0;
+  const dist_vessel1 = hasVessel1 ? dv1Raw : 0;
+  const dist_vessel2 = hasVessel2 ? dv2Raw : 0;
+
+  let Ep = d.Ep;
+  let epSource = 'referensi EUP';
+  if (typeof R !== 'undefined' && R && R.epRpome > 0 && typeof CALC_MODE !== 'undefined' && CALC_MODE === 'ggl') {
+    Ep = R.epRpome;
+    epSource = 'Processing tab';
+  }
+
+  const efB40 = G.EF_B40;
+  const mm = G.Mm_Md;
+
+  const etd_truck_raw   = hasTruck   ? dist_truck   * G.h_truck  * efB40 * mm : 0;
+  const etd_vessel1_raw = hasVessel1 ? dist_vessel1 * G.h_vessel * efB40 * mm : 0;
+  const etd_vessel2_raw = hasVessel2 ? dist_vessel2 * G.h_vessel * efB40 * mm : 0;
+  const total_etd_raw = etd_truck_raw + etd_vessel1_raw + etd_vessel2_raw;
+  const N = total_etd_raw;
+  const totalFob = Ep + N;
+
+  const periodVal = (etdDom('etd-period').value || '').trim() || String(new Date().getFullYear());
+  saveLatestEtdSnapshot({
+    savedAt: new Date().toISOString(),
+    period: periodVal,
+    supplier: supplier,
+    destination: dest,
+    destinationLabel: d.label,
+    etdForSavings: N,
+    totalFob: totalFob,
+    unit: 'kg CO2eq/dry-ton'
+  });
+  latestEtdCalc = {
+    id: 'etd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    savedAt: new Date().toISOString(),
+    period: periodVal,
+    site: supplier,
+    route: d.label,
+    etdValue: N,
+    unit: 'kg CO2eq/dry-ton',
+    supplier: supplier,
+    refinery: dest,
+    truckDist: dist_truck,
+    vesselDist1: dist_vessel1,
+    vesselDist2: dist_vessel2,
+    etdN: N,
+    etdR: totalFob,
+    etdS: null,
+    etdT: null,
+    etdTotal: totalFob,
+    rawPayload: {
+      variant: 'ggl',
+      destination: dest,
+      destinationLabel: d.label,
+      dist_truck, dist_vessel1, dist_vessel2,
+      total_etd_raw, N, Ep, R: totalFob, epSource: epSource
+    }
+  };
+
+  (function() {
+    var rec = {
+      id: latestEtdCalc.id,
+      savedAt: latestEtdCalc.savedAt,
+      period: periodVal,
+      supplier: supplier,
+      refinery: dest,
+      origin: 'Indonesia',
+      vesselName: '',
+      blNumber: '',
+      blDate: '',
+      certType: '',
+      loadingPort: '',
+      shipmentDest: d.label,
+      truckDist: dist_truck,
+      vesselDist1: dist_vessel1,
+      vesselDist2: dist_vessel2,
+      etdN: N,
+      etdR: totalFob,
+      etdS: null,
+      etdT: null,
+      etdTotal: totalFob,
+      rawPayload: latestEtdCalc.rawPayload
+    };
+    etdResultsLog = etdResultsLog.filter(function(x){ return x.supplier !== supplier || x.refinery !== dest; });
+    etdResultsLog.unshift(rec);
+  }());
+
+  let modeLabel, distLabel;
+  if (hasTruck && hasVessel1 && hasVessel2) {
+    modeLabel = 'Bulking (Truck + 2 Vessel)';
+    distLabel = 'Truck ' + dist_truck + ' km + Vessel1 ' + dist_vessel1 + ' km + Vessel2 ' + dist_vessel2 + ' km';
+  } else if (!hasTruck && hasVessel1 && hasVessel2) {
+    modeLabel = 'Bulking (2 Vessel)';
+    distLabel = 'Vessel1 ' + dist_vessel1 + ' km + Vessel2 ' + dist_vessel2 + ' km';
+  } else if (hasTruck && hasVessel1) {
+    modeLabel = 'Bulking (Truck + Vessel)';
+    distLabel = 'Truck ' + dist_truck + ' km + Vessel ' + dist_vessel1 + ' km';
+  } else if (hasTruck) {
+    modeLabel = 'Direct Trucking';
+    distLabel = dist_truck + ' km (truck)';
+  } else {
+    modeLabel = 'Direct Vessel';
+    distLabel = dist_vessel1 + ' km (vessel)';
+  }
+
+  var summaryHtml = ''
+    + (hasTruck ? etdStatCardHtml('Etd Cangkang Trucking', etd_truck_raw, false) : '')
+    + (hasVessel1 ? etdStatCardHtml('Etd Cangkang Vessel' + (hasVessel2 ? ' 1' : ''), etd_vessel1_raw, false) : '')
+    + (hasVessel2 ? etdStatCardHtml('Etd Cangkang Vessel 2', etd_vessel2_raw, false) : '')
+    + etdStatCardHtml('Ep Processing', Ep, false)
+    + etdStatCardHtml('Etd FOB ' + dest, N, false)
+    + etdStatCardHtml('Total FOB ' + dest, totalFob, true);
+
+  var rows = [];
+  if (hasTruck) rows.push({
+    name: 'Etd Cangkang — Trucking',
+    formula: dist_truck + ' km × η_truck(' + G.h_truck + ') × EF_B40(' + efB40.toFixed(5) + ') × Mm(' + mm + ')',
+    val: etd_truck_raw
+  });
+  if (hasVessel1) rows.push({
+    name: 'Etd Cangkang — Vessel' + (hasVessel2 ? ' 1' : ''),
+    formula: dist_vessel1 + ' km × η_vessel(' + G.h_vessel + ') × EF_B40(' + efB40.toFixed(5) + ') × Mm(' + mm + ')',
+    val: etd_vessel1_raw
+  });
+  if (hasVessel2) rows.push({
+    name: 'Etd Cangkang — Vessel 2 (Bulking)',
+    formula: dist_vessel2 + ' km × η_vessel(' + G.h_vessel + ') × EF_B40(' + efB40.toFixed(5) + ') × Mm(' + mm + ')',
+    val: etd_vessel2_raw
+  });
+  rows.push({
+    name: 'Ep Processing',
+    formula: epSource === 'Processing tab' ? 'From Processing tab — ' + d.label : 'EUP reference — ' + d.label,
+    val: Ep
+  });
+  rows.push({
+    name: 'Etd FOB ' + dest + ' (N)',
+    formula: '(' + total_etd_raw.toFixed(4) + ') truck + vessel(s)',
+    val: N
+  });
+  rows.push({
+    name: 'Etd FOB Tj. Langsat (O)',
+    formula: '-',
+    val: null
+  });
+  rows.push({
+    name: 'Etd FOB Port Klang (P)',
+    formula: '-',
+    val: null
+  });
+
+  var fobHtml = etdFobCardHtml('FOB ' + d.label, totalFob, Ep, true);
+
+  var factorsHtml = ''
+    + (hasTruck ? '<div class="factor-item"><span class="factor-key">η truck</span><span class="factor-val">' + G.h_truck + '</span></div>' : '')
+    + ((hasVessel1 || hasVessel2) ? '<div class="factor-item"><span class="factor-key">η vessel</span><span class="factor-val">' + G.h_vessel + '</span></div>' : '')
+    + '<div class="factor-item"><span class="factor-key">EF_B40</span><span class="factor-val">' + efB40.toFixed(5) + '</span></div>'
+    + '<div class="factor-item"><span class="factor-key">Mm</span><span class="factor-val">' + mm + '</span></div>'
+    + '<div class="factor-item"><span class="factor-key">Ep (' + dest + ')</span><span class="factor-val">' + Ep.toFixed(5) + '</span></div>'
+    + '<div class="factor-item"><span class="factor-key">Product</span><span class="factor-val">Cangkang</span></div>';
+
+  paintEtdResultsView(etdDom, {
+    supplier: supplier,
+    meta: distLabel + ' · ' + d.label + ' · ' + modeLabel,
+    summaryHtml: summaryHtml,
+    rows: rows,
+    fobHtml: fobHtml,
+    factorsHtml: factorsHtml
+  });
+  updateModeHint();
+}
+
 function etdCalculate() {
+  if ((typeof ETD_VARIANT !== 'undefined' && ETD_VARIANT === 'ggl') ||
+      (typeof CALC_MODE !== 'undefined' && CALC_MODE === 'ggl')) {
+    return etdCalculateGgl();
+  }
   const supplier = document.getElementById('supplier').value.trim() || '—';
   const dest    = document.getElementById('destination').value;
   const dtRaw   = parseFloat(document.getElementById('dist_truck').value);
@@ -136,7 +408,7 @@ function etdCalculate() {
   const hasVessel2 = !isNaN(dv2Raw) && dv2Raw > 0;
 
   if (!hasTruck && !hasVessel1 && !hasVessel2) {
-    alert('Masukkan minimal satu jarak (Trucking atau Vessel)!');
+    alert('Enter at least one distance (Trucking or Vessel)!');
     return;
   }
 
@@ -303,37 +575,13 @@ function etdCalculate() {
   document.getElementById('r-supplier').textContent = supplier;
   document.getElementById('r-meta').textContent = `${distLabel} · ${d.label} · ${modeLabel}`;
 
-  document.getElementById('r-summary').innerHTML = `
-    ${hasTruck ? `<div class="stat-card">
-      <div class="stat-label">Etd POME Trucking</div>
-      <div class="stat-value">${etd_truck_raw.toFixed(2)}</div>
-      <div class="stat-unit">kgCO₂e/dry-t</div>
-    </div>` : ''}
-    ${hasVessel1 ? `<div class="stat-card">
-      <div class="stat-label">Etd POME Vessel${hasVessel2 ? ' 1' : ''}</div>
-      <div class="stat-value">${etd_vessel1_raw.toFixed(2)}</div>
-      <div class="stat-unit">kgCO₂e/dry-t</div>
-    </div>` : ''}
-    ${hasVessel2 ? `<div class="stat-card">
-      <div class="stat-label">Etd POME Vessel 2</div>
-      <div class="stat-value">${etd_vessel2_raw.toFixed(2)}</div>
-      <div class="stat-unit">kgCO₂e/dry-t</div>
-    </div>` : ''}
-    <div class="stat-card">
-      <div class="stat-label">Ep Refinery</div>
-      <div class="stat-value">${Ep.toFixed(2)}</div>
-      <div class="stat-unit">kgCO₂e/dry-t</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Etd FOB ${dest}</div>
-      <div class="stat-value">${N.toFixed(2)}</div>
-      <div class="stat-unit">kgCO₂e/dry-t</div>
-    </div>
-    <div class="stat-card highlight">
-      <div class="stat-label">Total FOB ${dest}</div>
-      <div class="stat-value">${R.toFixed(2)}</div>
-      <div class="stat-unit">kgCO₂e/dry-t</div>
-    </div>`;
+  const summaryHtml = ''
+    + (hasTruck ? etdStatCardHtml('Etd POME Trucking', etd_truck_raw, false) : '')
+    + (hasVessel1 ? etdStatCardHtml('Etd POME Vessel' + (hasVessel2 ? ' 1' : ''), etd_vessel1_raw, false) : '')
+    + (hasVessel2 ? etdStatCardHtml('Etd POME Vessel 2', etd_vessel2_raw, false) : '')
+    + etdStatCardHtml('Ep Refinery', Ep, false)
+    + etdStatCardHtml('Etd FOB ' + dest, N, false)
+    + etdStatCardHtml('Total FOB ' + dest, R, true);
 
   const EF_used = (dest === 'TPG' || dest === 'GLM') ? EF_B10 : EF_B40;
   const EF_vessel_used = (dest === 'TPG' || dest === 'GLM') ? EF_HFO : EF_B40;
@@ -375,40 +623,23 @@ function etdCalculate() {
   });
   rows.push({
     name: 'Etd FOB Tj. Langsat (O)',
-    formula: O !== null ? (dest === 'TPG' ? 'Langsung di TPG' : 'N + vessel ke TPG') : '-',
+    formula: O !== null ? (dest === 'TPG' ? 'Direct at TPG' : 'N + vessel to TPG') : '-',
     val: O
   });
   rows.push({
     name: 'Etd FOB Port Klang (P)',
-    formula: P !== null ? (dest === 'GLM' ? 'Langsung di GLM' : 'N + vessel ke GLM') : '-',
+    formula: P !== null ? (dest === 'GLM' ? 'Direct at GLM' : 'N + vessel to GLM') : '-',
     val: P
   });
-
-  document.getElementById('r-tbody').innerHTML = rows.map(r => `
-    <tr>
-      <td>
-        <div class="td-name">${r.name}</div>
-        <div class="td-formula">${r.formula}</div>
-      </td>
-      <td></td>
-      <td class="${r.val === null ? 'td-val na' : 'td-val'}">
-        ${r.val === null ? 'N/A' : r.val.toFixed(2)}
-      </td>
-    </tr>`).join('');
 
   const fobs = [
     {label: `FOB ${d.label}`, val: R, primary: true},
     ...(S !== null && dest !== 'TPG' ? [{label: 'FOB Tj. Langsat', val: S, primary: false}] : []),
     ...(T !== null && dest !== 'GLM' ? [{label: 'FOB Port Klang', val: T, primary: false}] : [])
   ];
-  document.getElementById('r-fob').innerHTML = fobs.map(f => `
-    <div class="fob-card ${f.primary ? 'primary' : ''}">
-      <div class="fob-label">${f.label}</div>
-      <div class="fob-value">${f.val.toFixed(2)}</div>
-      <div class="fob-breakdown">Ep ${Ep.toFixed(2)} + Etd ${(f.val - Ep).toFixed(2)}</div>
-    </div>`).join('');
+  const fobHtml = fobs.map(f => etdFobCardHtml(f.label, f.val, Ep, f.primary)).join('');
 
-  document.getElementById('r-factors').innerHTML = `
+  const factorsHtml = `
     ${hasTruck ? `<div class="factor-item"><span class="factor-key">η truck</span><span class="factor-val">${h_truck}</span></div>` : ''}
     ${(hasVessel1||hasVessel2) ? `<div class="factor-item"><span class="factor-key">η vessel</span><span class="factor-val">${h_vessel}</span></div>` : ''}
     <div class="factor-item"><span class="factor-key">${EF_label}</span><span class="factor-val">${EF_used.toFixed(5)}</span></div>
@@ -424,13 +655,19 @@ function etdCalculate() {
       <span class="factor-val editable" onclick="openFactorModal('${dest}')" title="Triple-click to edit">${AF}</span>
     </div>`;
 
-  document.getElementById('results').style.display = 'block';
-  document.getElementById('results').scrollIntoView({behavior: 'smooth'});
+  paintEtdResultsView(function(id) { return document.getElementById(id); }, {
+    supplier: supplier,
+    meta: `${distLabel} · ${d.label} · ${modeLabel}`,
+    summaryHtml: summaryHtml,
+    rows: rows,
+    fobHtml: fobHtml,
+    factorsHtml: factorsHtml
+  });
 }
 
 function saveETDToSheet() {
   if (!latestEtdCalc) {
-    showToast('Hitung Emisi dulu sebelum save ETD', 'error');
+    showToast('Calculate emissions before saving ETD', 'error');
     return;
   }
   var _rp_ = latestEtdCalc.rawPayload || {};
@@ -787,7 +1024,7 @@ function _buildEtdResultBlock(r) {
 function renderEtdResultsList() {
   var el = document.getElementById('etd-results-list');
   if (!etdResultsLog.length) {
-    el.innerHTML = '<div style="text-align:center;padding:48px 0;color:#d1d5db;font-size:13px">Belum ada data — gunakan menu Traceability Export Shipment untuk mengirim hasil ke sini.</div>';
+    el.innerHTML = '<div style="text-align:center;padding:48px 0;color:#d1d5db;font-size:13px">No data yet — use Traceability Export Shipment to send results here.</div>';
     return;
   }
   var html = '';
@@ -797,7 +1034,7 @@ function renderEtdResultsList() {
       + '<div style="color:#fff;font-weight:600;font-size:12px">#'+(idx+1)+' '+escH(r.supplier||'—')+' &nbsp;<span style="font-weight:400;color:#94a3b8;font-size:11px">'+escH(r.vesselName||'')+'  '+escH(r.blNumber||'')+'</span></div>'
       + '<div style="display:flex;gap:8px;align-items:center">'
       + '<span style="font-size:10px;color:#94a3b8">'+escH(r.savedAt||'')+'</span>'
-      + '<button type="button" class="btn btn-outline btn-sm" onclick="useEtdResultForSavings('+idx+')" style="border-color:#60a5fa;color:#ffffff;background:#1d4ed8">Pilih utk GHG</button>'
+      + '<button type="button" class="btn btn-outline btn-sm" onclick="useEtdResultForSavings('+idx+')" style="border-color:#60a5fa;color:#ffffff;background:#1d4ed8">Use for GHG Savings</button>'
       + '</div>'
       + '</div>'
       + '<div style="background:#f1f5f9;padding:8px 16px;display:flex;gap:20px;flex-wrap:wrap;border-bottom:1px solid #e2e8f0;font-size:11px;color:#475569">'
@@ -823,7 +1060,7 @@ function useEtdResultForSavings(idx) {
   if (!r) return;
   var etdVal = _resolveEtdForSavings_(r);
   if (!etdVal) {
-    showToast('Nilai ETD pada record ini kosong', 'error');
+    showToast('ETD value is empty for this record', 'error');
     return;
   }
 
@@ -843,7 +1080,7 @@ function useEtdResultForSavings(idx) {
   var gsSiteEl = document.getElementById('gs-site');
   if (gsSiteEl && !gsSiteEl.value) gsSiteEl.value = r.supplier || '';
   if (typeof ghgSavingsCalc === 'function') ghgSavingsCalc();
-  showToast('ETD FOB dipilih untuk GHG Savings: ' + fmt(etdVal, 2), 'success');
+  showToast('ETD FOB selected for GHG Savings: ' + fmt(etdVal, 2), 'success');
 }
 
 function _etdResCard(label, val, color, highlight) {
@@ -1001,8 +1238,9 @@ function _buildEtdResultBlockPdf(r, idx) {
 }
 
 function exportEtdResultsPdf() {
-  if (!etdResultsLog.length) { showToast('Belum ada data ETD Results', 'error'); return; }
-  if (typeof html2pdf === 'undefined') { showToast('PDF library not loaded', 'error'); return; }
+  if (!etdResultsLog.length) { showToast('No ETD results data yet', 'error'); return; }
+  if (pdfExportIsBusy()) { showToast('PDF export already in progress…', 'error'); return; }
+  if (!html2pdfIsReady()) { showToast('PDF library not loaded', 'error'); return; }
 
   var sel = document.getElementById('etd-export-select');
   var selectedId = sel ? sel.value : 'all';
@@ -1011,7 +1249,7 @@ function exportEtdResultsPdf() {
     exportRows = exportRows.filter(function(r){ return String(r.id || '') === selectedId; });
   }
   if (!exportRows.length) {
-    showToast('Tidak ada ETD result valid untuk diexport. Pilih record lain.', 'error');
+    showToast('No valid ETD results to export. Select another record.', 'error');
     return;
   }
 
@@ -1057,26 +1295,30 @@ function exportEtdResultsPdf() {
 
   var el = document.createElement('div');
   el.innerHTML = html;
-  el.style.position  = 'absolute';
-  el.style.left      = '0';
-  el.style.top       = '0';
-  el.style.transform = 'translateX(-9999px)';
-  el.style.width     = '277mm';
+  el.style.width = '277mm';
   el.style.background = '#fff';
-  document.body.appendChild(el);
-  safePdfExport(el, {
+
+  var pdfOpts = {
     margin: [6,6,6,6],
     filename: 'ETD_Results_'+new Date().toISOString().slice(0,10)+'.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
     pagebreak: { mode: ['css', 'legacy'] }
-  }).then(function(){ document.body.removeChild(el); showToast('PDF ETD Results exported', 'success'); })
-    .catch(function(e){ document.body.removeChild(el); showToast('PDF error: ' + e.message, 'error'); });
+  };
+
+  safePdfExport(el, pdfOpts, {
+    onBusy: function(msg) { showToast(msg, 'error'); }
+  }).then(function() {
+    showToast('PDF ETD Results exported', 'success');
+  }).catch(function(e) {
+    showToast('PDF error: ' + e.message, 'error');
+  });
 }
 
 function exportEtdResultsExcel() {
-  if (!etdResultsLog.length) { showToast('Belum ada data ETD Results', 'error'); return; }
+  if (!etdResultsLog.length) { showToast('No ETD results data yet', 'error'); return; }
+  if (excelExportIsBusy()) { showToast('Excel export already in progress…', 'error'); return; }
 
   var etdGglX = (typeof ETD_VARIANT !== 'undefined' && ETD_VARIANT === 'ggl');
   var headerMeta = [
@@ -1094,8 +1336,10 @@ function exportEtdResultsExcel() {
   ws['!cols'] = [{wch:14},{wch:18},{wch:18},{wch:20},{wch:12},{wch:14},{wch:28},{wch:12},{wch:20},{wch:20},{wch:20},{wch:28}];
   ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:11}}];
 
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'ETD Results');
-  XLSX.writeFile(wb, 'ETD_Results_'+new Date().toISOString().slice(0,10)+'.xlsx');
-  showToast('Excel ETD Results exported', 'success');
+  runLockedExcel(function() {
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ETD Results');
+    XLSX.writeFile(wb, 'ETD_Results_'+new Date().toISOString().slice(0,10)+'.xlsx');
+    showToast('Excel ETD Results exported', 'success');
+  }, function(msg) { showToast(msg, 'error'); });
 }

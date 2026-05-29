@@ -34,7 +34,7 @@ function trcRebuildDestinationDropdowns() {
   var prevFilter = filterSel.value;
   var prevShip = shipSel.value;
 
-  filterSel.innerHTML = '<option value="">— Semua Destination —</option>';
+  filterSel.innerHTML = '<option value="">— All Destinations —</option>';
   dests.forEach(function(d) {
     var opt = document.createElement('option');
     opt.value = d;
@@ -142,7 +142,7 @@ function trcUpdatePaginationBar() {
     else {
       var start = (trcCurrentPage - 1) * TRC_PAGE_SIZE + 1;
       var end = Math.min(trcCurrentPage * TRC_PAGE_SIZE, n);
-      infoEl.textContent = 'Menampilkan ' + start + '–' + end + ' dari ' + n + ' · Hal ' + trcCurrentPage + '/' + totalPages;
+      infoEl.textContent = 'Showing ' + start + '–' + end + ' of ' + n + ' · Page ' + trcCurrentPage + '/' + totalPages;
     }
   }
   if (!wrap) return;
@@ -153,7 +153,7 @@ function trcUpdatePaginationBar() {
   prev.type = 'button';
   prev.setAttribute('type', 'button');
   prev.textContent = '‹';
-  prev.title = 'Sebelumnya';
+  prev.title = 'Previous';
   prev.disabled = trcCurrentPage <= 1;
   prev.onclick = function() { trcGoToPage(trcCurrentPage - 1); };
   wrap.appendChild(prev);
@@ -176,7 +176,7 @@ function trcUpdatePaginationBar() {
   var next = document.createElement('button');
   next.type = 'button';
   next.textContent = '›';
-  next.title = 'Berikutnya';
+  next.title = 'Next';
   next.disabled = trcCurrentPage >= totalPages;
   next.onclick = function() { trcGoToPage(trcCurrentPage + 1); };
   wrap.appendChild(next);
@@ -279,7 +279,7 @@ function trcResolveSelectedSupplier_(supplierName) {
 function trcGetPoolForSelection_() {
   var checked = trcGetSelected();
   if (checked.length) return checked;
-  showToast('Centang minimal 1 supplier dulu sebelum cari jarak terjauh', 'error');
+  showToast('Select at least one supplier before finding farthest distance', 'error');
   return [];
 }
 
@@ -287,7 +287,7 @@ function trcSelectFarthestTruck() {
   var base = trcGetPoolForSelection_();
   if (!base.length) return;
   var pool = base.filter(function(s){ return s.transport === 'Trucking' || s.transport === 'Trucking+Vessel'; });
-  if (!pool.length) { showToast('Tidak ada supplier Trucking di yang dicentang', 'error'); return; }
+  if (!pool.length) { showToast('No trucking suppliers in selection', 'error'); return; }
   pool.sort(function(a,b){ return b.distTruck - a.distTruck; });
   var f = pool[0];
   trcFarthestTruck = f;
@@ -295,14 +295,14 @@ function trcSelectFarthestTruck() {
   document.getElementById('trc-sel-truck-supplier').textContent = f.name;
   document.getElementById('trc-sel-truck-dist').parentElement.classList.add('highlight');
   trcUpdateFinalFields();
-  showToast('Trucking terjauh: ' + f.name + ' (' + f.distTruck + ' km)', 'success');
+  showToast('Farthest trucking: ' + f.name + ' (' + f.distTruck + ' km)', 'success');
 }
 
 function trcSelectFarthestVessel() {
   var base = trcGetPoolForSelection_();
   if (!base.length) return;
   var pool = base.filter(function(s){ return s.transport === 'Trucking+Vessel' && trcMaxVessel_(s) > 0; });
-  if (!pool.length) { showToast('Tidak ada supplier Trucking+Vessel di yang dicentang', 'error'); return; }
+  if (!pool.length) { showToast('No trucking+vessel suppliers in selection', 'error'); return; }
   pool.sort(function(a,b){ return trcMaxVessel_(b) - trcMaxVessel_(a) || b.distTruck - a.distTruck; });
   var f = pool[0];
   trcFarthestVessel = f;
@@ -313,7 +313,7 @@ function trcSelectFarthestVessel() {
   document.getElementById('trc-sel-vessel2-supplier').textContent = f.distVessel2 ? f.name : '—';
   if (f.distVessel2) document.getElementById('trc-sel-vessel2-dist').parentElement.classList.add('highlight');
   trcUpdateFinalFields();
-  showToast('Vessel terjauh: ' + f.name + ' (V1: ' + (f.distVessel1||0) + ' km, V2: ' + (f.distVessel2||0) + ' km)', 'success');
+  showToast('Farthest vessel: ' + f.name + ' (V1: ' + (f.distVessel1||0) + ' km, V2: ' + (f.distVessel2||0) + ' km)', 'success');
 }
 
 function trcUpdateFinalFields() {
@@ -330,14 +330,14 @@ function trcClearSelection() {
   trcSelectedRows = {}; trcFarthestTruck = null; trcFarthestVessel = null;
   ['trc-sel-truck-dist','trc-sel-truck-supplier','trc-sel-vessel1-dist','trc-sel-vessel1-supplier','trc-sel-vessel2-dist','trc-sel-vessel2-supplier'].forEach(function(id){
     var el = document.getElementById(id);
-    if (el) el.textContent = id.indexOf('dist') !== -1 ? '—' : 'Belum dipilih';
+    if (el) el.textContent = id.indexOf('dist') !== -1 ? '—' : 'Not selected';
   });
   document.querySelectorAll('.dist-card').forEach(function(c){ c.classList.remove('highlight'); });
   ['trc-selected-supplier','trc-final-truck','trc-final-vessel1','trc-final-vessel2','trc-final-mode'].forEach(function(id){
     document.getElementById(id).value = '';
   });
   trcRenderSupplierTable();
-  showToast('Seleksi direset', 'success');
+  showToast('Selection cleared', 'success');
 }
 
 function trcOnRefineryChange() {
@@ -374,8 +374,8 @@ function trcSaveToETD() {
   var shipmentDestEl = document.getElementById('trc-shipment-dest');
   var shipmentDest = shipmentDestEl.value || '—';
 
-  if (!supplierName) { showToast('Pilih supplier terlebih dahulu', 'error'); return; }
-  if (!refinery) { showToast('Pilih Plan Refinery Tujuan', 'error'); return; }
+  if (!supplierName) { showToast('Select a supplier first', 'error'); return; }
+  if (!refinery) { showToast('Select destination refinery', 'error'); return; }
 
   var supplierData = trcResolveSelectedSupplier_(supplierName);
   var truckDist   = supplierData.distTruck   || 0;
@@ -456,7 +456,7 @@ function trcSaveToETD() {
     ghgSavingsCalc();
   }
 
-  showToast('ETD dihitung otomatis — hasil lengkap ditampilkan di bawah', 'success');
+  showToast('ETD calculated automatically — full results shown below', 'success');
 }
 
 function _trcResCard(label, val, color, highlight) {
@@ -469,8 +469,9 @@ function exportTrcPdf() {
   // Collect selected suppliers — fall back to all filtered if none checked
   var selected = trcGetSelected();
   if (!selected.length) selected = trcFilteredSuppliers.length ? trcFilteredSuppliers : TRC_SUPPLIERS;
-  if (!selected.length) { showToast('Tidak ada data supplier untuk di-export', 'error'); return; }
-  if (typeof html2pdf === 'undefined') { showToast('PDF library not loaded', 'error'); return; }
+  if (!selected.length) { showToast('No supplier data to export', 'error'); return; }
+  if (pdfExportIsBusy()) { showToast('PDF export already in progress…', 'error'); return; }
+  if (!html2pdfIsReady()) { showToast('PDF library not loaded', 'error'); return; }
 
   // URUTKAN dari total distance terbesar ke terkecil (yang paling jauh di atas).
   var _trcDistOf_ = function (s) {
@@ -556,7 +557,7 @@ function exportTrcPdf() {
     +   '<tr>'
     +     metaCell('BL Date', blDate)
     +     metaCell('Certification', certType)
-    +     metaCell('Kode SD', kodeSD)
+    +     metaCell('SD Code', kodeSD)
     +     metaCell('Loading Port', loadPort)
     +   '</tr>'
     +   '<tr>'
@@ -618,97 +619,97 @@ function exportTrcPdf() {
       pas 1:1 dengan lebar area PDF, jadi tidak ada sisi kiri/kanan yang
       kepotong saat di-place ke halaman jsPDF. */
   var PRINTABLE_W_PX = 1077;
-  var host = document.createElement('div');
-  host.id = 'trc-pdf-host';
-  host.style.cssText = [
-    'position:fixed',
-    'top:0',
-    'left:0',
-    'width:' + PRINTABLE_W_PX + 'px',
-    'background:#ffffff',
-    'padding:0',
-    'margin:0',
-    'z-index:-1',
-    'opacity:0.001',
-    'pointer-events:none',
-    'overflow:visible',
-    'color:#1e293b',
-    'font-family:\'Plus Jakarta Sans\',Arial,Helvetica,sans-serif'
-  ].join(';') + ';';
-
-  var inner = document.createElement('div');
-  inner.style.cssText = 'width:' + PRINTABLE_W_PX + 'px;background:#ffffff;color:#1e293b;box-sizing:border-box;';
-  inner.innerHTML = html;
-  host.appendChild(inner);
-  document.body.appendChild(host);
+  var host = null;
+  var inner = null;
 
   function cleanup() {
     if (host && host.parentNode) host.parentNode.removeChild(host);
+    host = null;
+    inner = null;
   }
-
-  // Tunggu fonts + 2 rAF + timeout agar layout & paint sempat settle.
-  var fontsReady;
-  try {
-    fontsReady = (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function')
-      ? document.fonts.ready
-      : Promise.resolve();
-  } catch (e) { fontsReady = Promise.resolve(); }
 
   showToast('Generating PDF Traceability…', 'success');
 
-  fontsReady.then(function () {
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        setTimeout(function () {
-          try {
-            html2pdf()
-              .set({
-                margin:      [6, 6, 6, 6],  // mm; 297mm − 12mm = 285mm ≈ 1077px
-                filename:    'Traceability_ISCC_INS_' + new Date().toISOString().slice(0, 10) + '.pdf',
-                image:       { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                  scale: 2,
-                  useCORS: true,
-                  letterRendering: true,
-                  backgroundColor: '#ffffff',
-                  logging: false,
-                  width: PRINTABLE_W_PX,
-                  windowWidth: PRINTABLE_W_PX,
-                  scrollX: 0,
-                  scrollY: 0,
-                  x: 0,
-                  y: 0
-                },
-                jsPDF:       { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true },
-                pagebreak:   { mode: ['css', 'legacy'], avoid: ['tr'] }
-              })
-              .from(inner)                 // DOM element, bukan string
-              .save()
-              .then(function () {
-                cleanup();
-                showToast('PDF Traceability exported', 'success');
-              })
-              .catch(function (err) {
-                cleanup();
-                showToast('PDF error: ' + (err && err.message ? err.message : err), 'error');
-              });
-          } catch (err) {
-            cleanup();
-            showToast('PDF error: ' + (err && err.message ? err.message : err), 'error');
-          }
-        }, 180);
-      });
+  runLockedHtml2Pdf(function() {
+    host = document.createElement('div');
+    host.id = 'trc-pdf-host';
+    host.style.cssText = [
+      'position:fixed',
+      'top:0',
+      'left:0',
+      'width:' + PRINTABLE_W_PX + 'px',
+      'background:#ffffff',
+      'padding:0',
+      'margin:0',
+      'z-index:-1',
+      'opacity:0.001',
+      'pointer-events:none',
+      'overflow:visible',
+      'color:#1e293b',
+      'font-family:\'Plus Jakarta Sans\',Arial,Helvetica,sans-serif'
+    ].join(';') + ';';
+
+    inner = document.createElement('div');
+    inner.style.cssText = 'width:' + PRINTABLE_W_PX + 'px;background:#ffffff;color:#1e293b;box-sizing:border-box;';
+    inner.innerHTML = html;
+    host.appendChild(inner);
+    document.body.appendChild(host);
+
+    return new Promise(function(resolve, reject) {
+      setTimeout(function() {
+        try {
+          html2pdf()
+            .set({
+              margin:      [6, 6, 6, 6],
+              filename:    'Traceability_ISCC_INS_' + new Date().toISOString().slice(0, 10) + '.pdf',
+              image:       { type: 'jpeg', quality: 0.98 },
+              html2canvas: {
+                scale: 2,
+                useCORS: true,
+                letterRendering: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                width: PRINTABLE_W_PX,
+                windowWidth: PRINTABLE_W_PX,
+                scrollX: 0,
+                scrollY: 0,
+                x: 0,
+                y: 0
+              },
+              jsPDF:       { unit: 'mm', format: 'a4', orientation: 'landscape', compress: true },
+              pagebreak:   { mode: ['css', 'legacy'], avoid: ['tr'] }
+            })
+            .from(inner)
+            .save()
+            .then(function() {
+              cleanup();
+              showToast('PDF Traceability exported', 'success');
+              resolve();
+            })
+            .catch(function(err) {
+              cleanup();
+              reject(err);
+            });
+        } catch (err) {
+          cleanup();
+          reject(err);
+        }
+      }, 120);
     });
-  }).catch(function () {
+  }, {
+    warmupMs: 100,
+    onBusy: function(msg) { showToast(msg, 'error'); }
+  }).catch(function(err) {
     cleanup();
-    showToast('PDF error: fonts not ready', 'error');
+    showToast('PDF error: ' + (err && err.message ? err.message : err), 'error');
   });
 }
 
 function exportTrcExcel() {
   var selected = trcGetSelected();
   if (!selected.length) selected = trcFilteredSuppliers.length ? trcFilteredSuppliers : TRC_SUPPLIERS;
-  if (!selected.length) { showToast('Tidak ada data untuk di-export', 'error'); return; }
+  if (!selected.length) { showToast('No data to export', 'error'); return; }
+  if (excelExportIsBusy()) { showToast('Excel export already in progress…', 'error'); return; }
 
   var blDate   = formatBlDate_(document.getElementById('trc-bl-date').value) || '';
   var blNumber = document.getElementById('trc-bl-number').value || '';
@@ -725,7 +726,7 @@ function exportTrcExcel() {
   var headerMeta = [
     ['TRACEABILITY EXPORT SHIPMENT — ISCC/INS'],
     ['BL Date', blDate, '', 'BL Number', blNumber, '', 'Vessel', vessel],
-    ['Certification', certType, '', 'Kode SD', kodeSD, '', 'Loading Port', loadPort],
+    ['Certification', certType, '', 'SD Code', kodeSD, '', 'Loading Port', loadPort],
     ['Shipment Destination', shipDest, '', 'Plan Refinery', refinery, '', 'AF / FF / Ep', af+' / '+ff+' / '+epRef],
     [],
     ['Supplier Name','Scope','Country of Origin','Area','Certificate','Transport Mode','Destination','Dist. Trucking (km)','Dist. Vessel 1 (km)','Dist. Vessel 2 (km)']
@@ -741,10 +742,12 @@ function exportTrcExcel() {
 
   ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:9}}];
 
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Traceability');
-  XLSX.writeFile(wb, 'Traceability_Export_ISCC_INS_'+new Date().toISOString().slice(0,10)+'.xlsx');
-  showToast('Excel Traceability exported', 'success');
+  runLockedExcel(function() {
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Traceability');
+    XLSX.writeFile(wb, 'Traceability_Export_ISCC_INS_'+new Date().toISOString().slice(0,10)+'.xlsx');
+    showToast('Excel Traceability exported', 'success');
+  }, function(msg) { showToast(msg, 'error'); });
 }
 
 function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -807,9 +810,9 @@ function trcInputSupplierModalBackdrop(e) {
 
 function trcSaveInputSupplier() {
   var name = (document.getElementById('trc-in-name').value || '').trim();
-  if (!name) { showToast('Nama supplier wajib diisi', 'error'); return; }
+  if (!name) { showToast('Supplier name is required', 'error'); return; }
   if (TRC_SUPPLIERS.some(function(s){ return s.name === name; })) {
-    showToast('Nama supplier sudah ada di daftar', 'error'); return;
+    showToast('Supplier name already exists in the list', 'error'); return;
   }
   var scope = (document.getElementById('trc-in-scope').value || '').trim();
   var origin = (document.getElementById('trc-in-origin').value || '').trim();
@@ -850,7 +853,7 @@ function trcSaveInputSupplier() {
   }
   trcCurrentPage = idx >= 0 ? Math.floor(idx / TRC_PAGE_SIZE) + 1 : 1;
   trcRenderSupplierTable();
-  showToast('Supplier ditambahkan', 'success');
+  showToast('Supplier added', 'success');
 }
 
 function trcFetchSupplierDB() {

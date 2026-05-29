@@ -8,10 +8,10 @@ const SCRIPT_ORDER = [
 ];
 
 const SCRIPT_VERIFY = {
-  '/modules/shared/pdf-export.js': () => typeof acquirePdfExportLock === 'function',
+  '/modules/shared/pdf-export.js': () => typeof acquirePdfExportLock === 'function' && typeof runLockedHtml2Pdf === 'function',
   '/modules/refinery-calc/core.js': () => typeof openCalculatorMode === 'function',
   '/modules/ghg-savings/index.js': () => typeof ghgSavingsCalc === 'function',
-  '/modules/refinery-calc/app.js': () => typeof showToast === 'function',
+  '/modules/refinery-calc/app.js': () => typeof showToast === 'function' && typeof initRefineryCalcApp === 'function',
   '/modules/etd/index.js': () => typeof etdCalculate === 'function',
   '/modules/traceability/index.js': () => typeof openTraceabilityMode === 'function',
 };
@@ -51,5 +51,8 @@ function loadClassicScript(src) {
 export async function bootCalculatorScripts() {
   for (const src of SCRIPT_ORDER) {
     await loadClassicScript(src);
+  }
+  if (typeof initRefineryCalcApp === 'function') {
+    initRefineryCalcApp();
   }
 }

@@ -190,7 +190,7 @@ function ghgSavingsRenderSitePicker() {
     picker.innerHTML = '<div class="gs-site-picker-empty">' +
       (Array.isArray(gsDatacenterRows) && gsDatacenterRows.length
         ? 'Tidak ada site cocok. Coba kata kunci lain.'
-        : 'Datacenter kosong / belum ter-load dari Sheets.') +
+        : 'Datacenter empty / not loaded from Sheets.') +
       '</div>';
     picker.classList.add('open');
     return;
@@ -260,7 +260,7 @@ function ghgSavingsRenderDatacenterSiteList() {
     return;
   }
   var sites = ghgSavingsGetDatacenterSiteOptions('');
-  ghgSavingsUpdateDatacenterStatus(count + ' baris · ' + sites.length + ' site dari Sheets — ketik untuk cari, Enter atau klik untuk load.', false);
+  ghgSavingsUpdateDatacenterStatus(count + ' rows · ' + sites.length + ' sites from Sheets — type to search, Enter or click to load.', false);
 }
 
 function ghgSavingsApplyDatacenter() {
@@ -269,18 +269,18 @@ function ghgSavingsApplyDatacenter() {
   var period = periodEl ? String(periodEl.value || '').trim() : '';
   var site = siteEl ? String(siteEl.value || '').trim() : '';
   if (!site) {
-    showToast('Ketik atau pilih site dari Datacenter', 'error');
+    showToast('Type or select a site from Datacenter', 'error');
     if (siteEl) siteEl.focus();
     return;
   }
   if (!Array.isArray(gsDatacenterRows) || !gsDatacenterRows.length) {
-    showToast('Datacenter belum ter-load. Deploy Apps Script terbaru (getGhgSavingsDatacenter).', 'error');
+    showToast('Datacenter not loaded. Deploy the latest Apps Script (getGhgSavingsDatacenter).', 'error');
     return;
   }
   var row = ghgSavingsFindDatacenterRow(period, site);
   if (!row) {
     var hint = ghgSavingsGetDatacenterSiteOptions('').slice(0, 3).map(function(o) { return o.site; }).join(', ');
-    showToast('Site tidak ditemukan di Datacenter' + (hint ? '. Contoh: ' + hint : ''), 'error');
+    showToast('Site not found in Datacenter' + (hint ? '. Example: ' + hint : ''), 'error');
     return;
   }
   if (siteEl) siteEl.value = row.site;

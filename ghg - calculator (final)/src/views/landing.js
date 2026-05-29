@@ -18,13 +18,13 @@ export const landingView = `<div class="page active" id="page-landing">
           <div class="lc-meta">REFINERY</div>
           <h2>Refinery — GHG (POME)</h2>
           <p>Processing emission calculation that covers fuel, chemicals, electricity, water, and RPOME/POME allocation.</p>
-          <span class="btn btn-dark btn-sm" style="pointer-events:none">Open calculator</span>
+          <span class="btn btn-dark btn-sm" style="pointer-events:none">Open Calculator</span>
         </button>
         <button type="button" class="landing-card biodiesel" onclick="openCalculatorMode('biodiesel')">
           <div class="lc-meta">BIODIESEL</div>
           <h2>Biodiesel — GHG</h2>
           <p>Includes refinery features plus biodiesel-specific emissions and energy intensity per MJ PME.</p>
-          <span class="btn btn-dark btn-sm" style="pointer-events:none">Open calculator</span>
+          <span class="btn btn-dark btn-sm" style="pointer-events:none">Open Calculator</span>
         </button>
         <button type="button" class="landing-card ghg-savings" onclick="openGHGSavingsMode()">
           <div class="lc-meta">GHG SAVINGS</div>
@@ -38,19 +38,11 @@ export const landingView = `<div class="page active" id="page-landing">
           <p>Select supplier by name &amp; destination, enter BL data, auto-select farthest distance, and save to ETD.</p>
           <span class="btn btn-dark btn-sm" style="pointer-events:none">Open Menu</span>
         </button>
-      </div>
-      <div class="landing-grid-ggl">
-        <button type="button" class="landing-card etd-ggl" onclick="openETDGGLMode()">
+        <button type="button" class="landing-card ggl-combined" onclick="openGGLMode()">
           <div class="lc-meta">GGL</div>
-          <h2>ETD GGL</h2>
-          <p>Same ETD calculator as RPOME, configured for GGL transport and distribution.</p>
+          <h2>GGL — Shell (Cangkang)</h2>
+          <p>Combined processing and ETD for shell — bio solar, electricity, mass balance, and transport to EUP destinations.</p>
           <span class="btn btn-dark btn-sm" style="pointer-events:none">Open Calculator</span>
-        </button>
-        <button type="button" class="landing-card ggl-processing" onclick="openCalculatorMode('ggl')">
-          <div class="lc-meta">GGL</div>
-          <h2>Processing GGL</h2>
-          <p>Same processing layout as Refinery POME — emission factors limited to electricity and solar only.</p>
-          <span class="btn btn-dark btn-sm" style="pointer-events:none">Open calculator</span>
         </button>
       </div>
     </div>

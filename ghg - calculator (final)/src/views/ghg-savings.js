@@ -38,7 +38,7 @@ export const ghgSavingsView = `<div class="page" id="ghg-savings-wrap">
           <label>Site — GHG Savings Datacenter</label>
           <div class="gs-site-search-wrap">
             <div class="input-wrap">
-              <input type="text" id="gs-site" value="" placeholder="Ketik untuk cari site… e.g. EUP Bontang" autocomplete="off"
+              <input type="text" id="gs-site" value="" placeholder="Type to search site… e.g. EUP Bontang" autocomplete="off"
                 oninput="ghgSavingsOnSiteSearchInput()" onfocus="ghgSavingsOnSiteSearchInput()" onkeydown="ghgSavingsOnSiteSearchKeydown(event)" onblur="ghgSavingsHideSitePickerSoon()">
               <span class="input-unit">site</span>
             </div>

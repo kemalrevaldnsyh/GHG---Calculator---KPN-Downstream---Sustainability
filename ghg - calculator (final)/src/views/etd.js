@@ -13,7 +13,7 @@ export const etdView = `<div class="page" id="etd-app-wrap">
     <button class="etd-subtab active" id="etd-tab-calc" onclick="switchEtdSubTab('calc',this)">Calculator</button>
     <button class="etd-subtab" id="etd-tab-results" onclick="switchEtdSubTab('results',this)">Results</button>
   </div>
-  <div id="etd-inner">
+  <div id="etd-inner" class="etd-shell">
     <div class="container">
 
   <!-- ── Sub-page: Calculator ── -->
@@ -60,7 +60,7 @@ export const etdView = `<div class="page" id="etd-app-wrap">
       </div>
 
       <div class="form-field full">
-        <label>Vessel Distance 2 — Bulking (km) <span style="font-weight:400;color:var(--text3)">Isi jika ada 2 leg vessel</span></label>
+        <label>Vessel Distance 2 — Bulking (km) <span style="font-weight:400;color:var(--text3)">Fill in if there is a 2-leg vessel route</span></label>
         <input type="number" id="dist_vessel2" placeholder="Insert Vessel Distance 2 (Optional)" step="0.01" min="0" oninput="updateModeHint()"/>
       </div>
     </div>
@@ -84,9 +84,9 @@ export const etdView = `<div class="page" id="etd-app-wrap">
     <table class="breakdown-table">
       <thead>
         <tr>
-          <th>Komponen</th>
+          <th>Component</th>
           <th></th>
-          <th>Nilai</th>
+          <th>Value</th>
         </tr>
       </thead>
       <tbody id="r-tbody"></tbody>
@@ -113,7 +113,7 @@ export const etdView = `<div class="page" id="etd-app-wrap">
         </div>
       </div>
       <div id="etd-results-list">
-        <div style="text-align:center;padding:48px 0;color:#d1d5db;font-size:13px">Belum ada data — gunakan menu Traceability Export Shipment untuk mengirim hasil ke sini.</div>
+        <div style="text-align:center;padding:48px 0;color:#d1d5db;font-size:13px">No data yet — use Traceability Export Shipment to send results here.</div>
       </div>
     </div>
   </div><!-- end etd-sub-results -->

@@ -30,7 +30,7 @@ export const traceabilityView = `<div id="traceability-wrap">
           <option value="INS">INS</option>
         </select>
       </div>
-      <div class="trc-field"><label>Kode SD</label><input type="text" id="trc-kode-sd" placeholder="e.g. SD-001"></div>
+      <div class="trc-field"><label>SD Code</label><input type="text" id="trc-kode-sd" placeholder="e.g. SD-001"></div>
       <div class="trc-field"><label>Loading Port</label><input type="text" id="trc-loading-port" placeholder="e.g. Port of Dumai"></div>
       <div class="trc-field" style="grid-column:span 2"><label>Shipment Destination</label>
         <select id="trc-shipment-dest">
@@ -44,17 +44,17 @@ export const traceabilityView = `<div id="traceability-wrap">
   <div class="trc-section">
     <div class="trc-section-title">2. Supplier Selection</div>
     <div class="trc-grid trc-g3" style="margin-bottom:12px">
-      <div class="trc-field"><label>Filter Nama Supplier</label>
-        <input type="text" id="trc-filter-supplier" oninput="trcFilterSuppliers()" placeholder="Ketik nama supplier...">
+      <div class="trc-field"><label>Filter Supplier Name</label>
+        <input type="text" id="trc-filter-supplier" oninput="trcFilterSuppliers()" placeholder="Type supplier name...">
       </div>
       <div class="trc-field"><label>Filter Destination</label>
         <select id="trc-filter-dest" onchange="trcFilterSuppliers()">
-          <option value="">— Semua Destination —</option>
+          <option value="">— All Destinations —</option>
         </select>
       </div>
-      <div class="trc-field"><label>Filter Mode Transport</label>
+      <div class="trc-field"><label>Filter Transport Mode</label>
         <select id="trc-filter-mode" onchange="trcFilterSuppliers()">
-          <option value="">— Semua Mode —</option>
+          <option value="">— All Modes —</option>
           <option value="Trucking">Trucking Only</option>
           <option value="Trucking+Vessel">Trucking + Vessel</option>
         </select>
@@ -91,11 +91,11 @@ export const traceabilityView = `<div id="traceability-wrap">
 
   <!-- 3. Plan Refinery & Allocation Factors -->
   <div class="trc-section">
-    <div class="trc-section-title">3. Plan Refinery Tujuan (Allocation &amp; Feed Factor)</div>
+    <div class="trc-section-title">3. Destination Refinery (Allocation &amp; Feed Factor)</div>
     <div class="trc-grid trc-g4">
       <div class="trc-field"><label>Plan Refinery</label>
         <select id="trc-refinery" onchange="trcOnRefineryChange()">
-          <option value="">— Pilih Refinery —</option>
+          <option value="">— Select Refinery —</option>
           <option value="LBG">PMC Lubuk Gaung (LBG)</option>
           <option value="TJP">EUP Tanjung Pura (TJP)</option>
           <option value="BTG">EUP Bontang (BTG)</option>
@@ -111,32 +111,32 @@ export const traceabilityView = `<div id="traceability-wrap">
 
   <!-- 4. Auto Distance Selection -->
   <div class="trc-section">
-    <div class="trc-section-title">4. Seleksi Jarak Otomatis</div>
+    <div class="trc-section-title">4. Automatic Distance Selection</div>
     <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-trc-primary btn-sm" onclick="trcSelectFarthestTruck()">Cari Trucking Terjauh</button>
-      <button class="btn btn-trc-primary btn-sm" onclick="trcSelectFarthestVessel()">Cari Trucking+Vessel Terjauh</button>
-      <button class="btn btn-sm btn-outline" onclick="trcClearSelection()">Reset Pilihan</button>
+      <button class="btn btn-trc-primary btn-sm" onclick="trcSelectFarthestTruck()">Find Farthest Trucking</button>
+      <button class="btn btn-trc-primary btn-sm" onclick="trcSelectFarthestVessel()">Find Farthest Trucking+Vessel</button>
+      <button class="btn btn-sm btn-outline" onclick="trcClearSelection()">Reset Selection</button>
     </div>
     <div class="dist-summary-grid" id="trc-dist-summary">
       <div class="dist-card">
-        <div class="dist-card-label">Jarak Trucking Terpilih</div>
+        <div class="dist-card-label">Selected Trucking Distance</div>
         <div class="dist-card-val" id="trc-sel-truck-dist">—</div>
-        <div class="dist-card-sub" id="trc-sel-truck-supplier">Belum dipilih</div>
+        <div class="dist-card-sub" id="trc-sel-truck-supplier">Not selected</div>
       </div>
       <div class="dist-card">
-        <div class="dist-card-label">Jarak Vessel 1 Terpilih</div>
+        <div class="dist-card-label">Selected Vessel 1 Distance</div>
         <div class="dist-card-val" id="trc-sel-vessel1-dist">—</div>
-        <div class="dist-card-sub" id="trc-sel-vessel1-supplier">Belum dipilih</div>
+        <div class="dist-card-sub" id="trc-sel-vessel1-supplier">Not selected</div>
       </div>
       <div class="dist-card">
-        <div class="dist-card-label">Jarak Vessel 2 Terpilih</div>
+        <div class="dist-card-label">Selected Vessel 2 Distance</div>
         <div class="dist-card-val" id="trc-sel-vessel2-dist">—</div>
-        <div class="dist-card-sub" id="trc-sel-vessel2-supplier">Belum dipilih</div>
+        <div class="dist-card-sub" id="trc-sel-vessel2-supplier">Not selected</div>
       </div>
     </div>
     <div style="margin-top:8px">
       <div class="trc-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
-        <div class="trc-field"><label>Supplier Terpilih</label><input type="text" id="trc-selected-supplier" class="auto-selected" readonly placeholder="—"></div>
+        <div class="trc-field"><label>Selected Supplier</label><input type="text" id="trc-selected-supplier" class="auto-selected" readonly placeholder="—"></div>
         <div class="trc-field"><label>Trucking (km)</label><input type="text" id="trc-final-truck" class="auto-selected" readonly placeholder="—"></div>
         <div class="trc-field"><label>Vessel 1 (km)</label><input type="text" id="trc-final-vessel1" class="auto-selected" readonly placeholder="—"></div>
         <div class="trc-field"><label>Vessel 2 (km)</label><input type="text" id="trc-final-vessel2" class="auto-selected" readonly placeholder="—"></div>
@@ -144,7 +144,7 @@ export const traceabilityView = `<div id="traceability-wrap">
       </div>
     </div>
     <div class="trc-action-bar">
-      <button class="btn btn-trc-save" onclick="trcSaveToETD()">Save to ETD &amp; Hitung Otomatis</button>
+      <button class="btn btn-trc-save" onclick="trcSaveToETD()">Save to ETD &amp; Calculate Automatically</button>
       <span style="font-size:11px;color:#6b7280" id="trc-save-status"></span>
     </div>
   </div>
@@ -161,11 +161,11 @@ export const traceabilityView = `<div id="traceability-wrap">
 <div class="modal-overlay" id="trc-input-supplier-modal" onclick="trcInputSupplierModalBackdrop(event)">
   <div class="modal-card" onclick="event.stopPropagation()">
     <div class="modal-title">Input supplier</div>
-    <div class="modal-sub">Data ditambahkan ke daftar lokal (sesi ini). Untuk menyimpan ke Google Sheets, gunakan sheet secara langsung atau hubungi admin.</div>
+    <div class="modal-sub">Data is added to the local list (this session only). To persist to Google Sheets, use the sheet directly or contact an admin.</div>
     <div class="trc-modal-grid">
       <div class="full">
-        <label>Nama supplier</label>
-        <input type="text" id="trc-in-name" placeholder="Wajib" autocomplete="off">
+        <label>Supplier name</label>
+        <input type="text" id="trc-in-name" placeholder="Required" autocomplete="off">
       </div>
       <div>
         <label>Scope</label>
@@ -173,11 +173,11 @@ export const traceabilityView = `<div id="traceability-wrap">
       </div>
       <div>
         <label>Origin</label>
-        <input type="text" id="trc-in-origin" placeholder="Alamat / negara" autocomplete="off">
+        <input type="text" id="trc-in-origin" placeholder="Address / country" autocomplete="off">
       </div>
       <div>
         <label>Area</label>
-        <input type="text" id="trc-in-area" placeholder="mis. Pelalawan, RIAU" autocomplete="off">
+        <input type="text" id="trc-in-area" placeholder="e.g. Pelalawan, RIAU" autocomplete="off">
       </div>
       <div>
         <label>Certificate</label>
