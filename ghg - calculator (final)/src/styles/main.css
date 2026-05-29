@@ -709,7 +709,8 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
 #etd-app-wrap .header {
   background: linear-gradient(90deg, #0f172a, #1e293b);
 }
-#calc-app-wrap .header {
+#calc-app-wrap .header,
+#traceability-wrap .header {
   background: linear-gradient(90deg, #111827, #1f2937);
 }
 #ghg-savings-wrap .header {
@@ -717,7 +718,8 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
 }
 #etd-app-wrap .header-sub,
 #calc-app-wrap .header-sub,
-#ghg-savings-wrap .header-sub {
+#ghg-savings-wrap .header-sub,
+#traceability-wrap .header-sub {
   color: #cbd5e1;
 }
 .summary-grid-5 { grid-template-columns: repeat(5, 1fr); }
@@ -1244,7 +1246,6 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
 /* ── Traceability app wrap ── */
 #traceability-wrap { display: none; flex-direction: column; min-height: 100vh; }
 #traceability-wrap.active { display: flex; flex-direction: column; }
-#traceability-wrap .header { background: linear-gradient(90deg, #0c2340, #0369a1); }
 
 /* ETD Results Sub-tabs */
 #etd-app-wrap .etd-subtabs {

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="GHG Calculator">
+  <rect width="32" height="32" rx="7" fill="#b91c1c"/>
+  <rect x="6" y="5.5" width="20" height="21" rx="3.5" fill="#ffffff"/>
+  <rect x="8.5" y="8" width="15" height="6" rx="1.5" fill="#f8fafc" stroke="#e2e8f0" stroke-width="0.65"/>
+  <line x1="10.5" y1="10.3" x2="21.5" y2="10.3" stroke="#64748b" stroke-width="1.15" stroke-linecap="round"/>
+  <line x1="10.5" y1="12.6" x2="17.5" y2="12.6" stroke="#94a3b8" stroke-width="1.15" stroke-linecap="round"/>
+  <g fill="#dc2626">
+    <rect x="8.5" y="16.5" width="4.1" height="3" rx="0.85"/>
+    <rect x="13.95" y="16.5" width="4.1" height="3" rx="0.85"/>
+    <rect x="19.4" y="16.5" width="4.1" height="3" rx="0.85"/>
+    <rect x="8.5" y="20.8" width="4.1" height="3" rx="0.85" opacity="0.75"/>
+    <rect x="13.95" y="20.8" width="4.1" height="3" rx="0.85" opacity="0.75"/>
+    <rect x="19.4" y="20.8" width="4.1" height="3" rx="0.85" fill="#991b1b"/>
+  </g>
+</svg>
