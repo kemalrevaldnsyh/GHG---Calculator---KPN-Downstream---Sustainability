@@ -20,9 +20,9 @@ export const etdView = `<div class="page" id="etd-app-wrap">
   <div class="etd-subpage active" id="etd-sub-calc">
 
   <div class="etd-block-header">
-    <h1>GHG Emission Calculator</h1>
-    <p>Transportation &amp; Processing Emissions</p>
-    <div class="badge">Precision Formula Based</div>
+    <h1 id="etd-block-title">GHG Emission Calculator</h1>
+    <p id="etd-block-sub">Transportation &amp; Processing Emissions</p>
+    <div class="badge" id="etd-block-badge">Precision Formula Based</div>
   </div>
 
   <div class="card">

@@ -1016,6 +1016,11 @@ function exportEtdResultsPdf() {
   }
 
   var now = new Date().toLocaleDateString('en-GB', {year:'numeric', month:'short', day:'numeric'});
+  var etdGgl = (typeof ETD_VARIANT !== 'undefined' && ETD_VARIANT === 'ggl');
+  var etdModuleLabel = etdGgl ? 'ETD — GGL' : 'ETD — RPOME';
+  var etdPdfSub = etdGgl
+    ? 'Transportation &amp; Distribution Emissions · GGL'
+    : 'Transportation &amp; Distribution Emissions · Converted to Product';
 
   var resultBlocks = exportRows.map(function(r, idx){ return _buildEtdResultBlockPdf(r, idx); }).join('');
 
@@ -1024,8 +1029,8 @@ function exportEtdResultsPdf() {
     +   '<tr>'
     +     '<td style="padding:4px 0;vertical-align:bottom">'
     +       '<div style="font-size:7pt;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#64748b">KPN Downstream — Sustainability</div>'
-    +       '<div style="font-size:14pt;font-weight:800;color:#1e293b;letter-spacing:-0.3px">ETD Results</div>'
-    +       '<div style="font-size:7.5pt;color:#64748b;margin-top:2px">Transportation &amp; Distribution Emissions · Converted to Product</div>'
+    +       '<div style="font-size:14pt;font-weight:800;color:#1e293b;letter-spacing:-0.3px">ETD Results' + (etdGgl ? ' — GGL' : '') + '</div>'
+    +       '<div style="font-size:7.5pt;color:#64748b;margin-top:2px">' + etdPdfSub + '</div>'
     +     '</td>'
     +     '<td style="padding:4px 0;vertical-align:bottom;text-align:right;font-size:8pt;color:#475569;line-height:1.5">'
     +       '<strong>Generated: '+now+'</strong><br>'
@@ -1035,7 +1040,7 @@ function exportEtdResultsPdf() {
     + '</table>'
     + '<table style="width:100%;border-collapse:collapse;background:#1e293b;border-radius:4px;margin-bottom:8px">'
     +   '<tr>'
-    +     '<td style="padding:6px 10px;color:#fff;width:25%"><div style="font-size:6.5pt;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">Module</div><div style="font-weight:800;font-size:9pt">ETD — RPOME</div></td>'
+    +     '<td style="padding:6px 10px;color:#fff;width:25%"><div style="font-size:6.5pt;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">Module</div><div style="font-weight:800;font-size:9pt">' + etdModuleLabel + '</div></td>'
     +     '<td style="padding:6px 10px;color:#fff;width:25%"><div style="font-size:6.5pt;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">Methodology</div><div style="font-weight:800;font-size:9pt">RED III</div></td>'
     +     '<td style="padding:6px 10px;color:#fff;width:25%"><div style="font-size:6.5pt;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">Unit</div><div style="font-weight:800;font-size:9pt">kg CO&#x2082;eq/dry-t</div></td>'
     +     '<td style="padding:6px 10px;color:#fff;width:25%"><div style="font-size:6.5pt;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">Records</div><div style="font-weight:800;font-size:9pt">'+exportRows.length+'</div></td>'

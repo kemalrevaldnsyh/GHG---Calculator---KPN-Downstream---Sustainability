@@ -4,12 +4,21 @@ var ETD_VARIANT = 'rpome';
 function applyEtdBranding() {
   var title = document.getElementById('etd-header-title');
   var sub = document.getElementById('etd-header-sub');
+  var blockTitle = document.getElementById('etd-block-title');
+  var blockSub = document.getElementById('etd-block-sub');
+  var blockBadge = document.getElementById('etd-block-badge');
   if (ETD_VARIANT === 'ggl') {
     if (title) title.textContent = 'ETD — GGL';
     if (sub) sub.textContent = 'Transportation & processing · GGL';
+    if (blockTitle) blockTitle.textContent = 'GHG Emission Calculator — GGL';
+    if (blockSub) blockSub.textContent = 'Transportation & Processing Emissions · GGL';
+    if (blockBadge) blockBadge.textContent = 'GGL';
   } else {
     if (title) title.textContent = 'ETD — RPOME';
     if (sub) sub.textContent = 'Transportation & processing (lokal)';
+    if (blockTitle) blockTitle.textContent = 'GHG Emission Calculator';
+    if (blockSub) blockSub.textContent = 'Transportation & Processing Emissions';
+    if (blockBadge) blockBadge.textContent = 'Precision Formula Based';
   }
 }
 
