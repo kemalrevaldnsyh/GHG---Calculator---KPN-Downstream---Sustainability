@@ -1078,9 +1078,10 @@ function exportEtdResultsPdf() {
 function exportEtdResultsExcel() {
   if (!etdResultsLog.length) { showToast('Belum ada data ETD Results', 'error'); return; }
 
+  var etdGglX = (typeof ETD_VARIANT !== 'undefined' && ETD_VARIANT === 'ggl');
   var headerMeta = [
-    ['ETD RESULTS — TRANSPORTATION & DISTRIBUTION EMISSIONS'],
-    ['Module', 'ETD — RPOME', '', 'Methodology', 'RED III', '', 'Unit', 'kg CO2eq/dry-t'],
+    ['ETD RESULTS — TRANSPORTATION & DISTRIBUTION EMISSIONS' + (etdGglX ? ' (GGL)' : '')],
+    ['Module', etdGglX ? 'ETD — GGL' : 'ETD — RPOME', '', 'Methodology', 'RED III', '', 'Unit', 'kg CO2eq/dry-t'],
     [],
     ['BL Date','Loading Port','Country of Origin','Vessel Name','Cert Type','SD Number','Supplier','Refinery','Dist. Trucking (km)','Dist. Vessel 1 (km)','Dist. Vessel 2 (km)','ETD Total FOB (kg CO2eq/dry-t)']
   ];
