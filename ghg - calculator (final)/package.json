@@ -1,0 +1,17 @@
+{
+  "name": "ghg-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/sync-modules.mjs && vite",
+    "start": "npm run dev",
+    "build": "node scripts/sync-modules.mjs && vite build",
+    "preview": "vite preview",
+    "sync:modules": "node scripts/sync-modules.mjs",
+    "views:to-js": "node scripts/html-views-to-js.mjs"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}
