@@ -150,6 +150,25 @@ export function requireAuthSession(callback) {
 
 export async function signOut() {
   if (!supabase) return;
+  appStarted = false;
   await supabase.auth.signOut();
-  window.location.href = `${window.location.pathname}?signout=1`;
+  renderLogin();
+}
+
+export function initLandingAuthUi() {
+  if (!supabaseConfigured) return;
+
+  const bar = document.getElementById('landing-auth-bar');
+  const btn = document.getElementById('btn-landing-signout');
+  const emailEl = document.getElementById('landing-user-email');
+  if (!bar || !btn) return;
+
+  bar.hidden = false;
+  btn.addEventListener('click', () => { signOut(); });
+
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (emailEl && session?.user?.email) {
+      emailEl.textContent = session.user.email;
+    }
+  });
 }

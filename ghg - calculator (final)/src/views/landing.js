@@ -1,6 +1,10 @@
 /** View: landing — auto-generated from landing.html */
 export const landingView = `<div class="page active" id="page-landing">
   <div class="landing-wrap">
+    <div class="landing-topbar" id="landing-auth-bar" hidden>
+      <span class="landing-user-email" id="landing-user-email"></span>
+      <button type="button" class="landing-signout" id="btn-landing-signout">Sign out</button>
+    </div>
     <div class="landing-hero">
       <p class="landing-eyebrow">KPN Downstream - Sustainability</p>
       <h1>Choose your calculator!</h1>
