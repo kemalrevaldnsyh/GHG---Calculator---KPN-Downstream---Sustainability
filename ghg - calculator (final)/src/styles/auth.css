@@ -159,6 +159,22 @@
 
 .auth-btn-primary:hover:not(:disabled) { background: #6b1515; }
 
+.auth-back-link {
+  display: block;
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.auth-back-link:hover {
+  color: #801a1a;
+  text-decoration: underline;
+}
+
 .auth-alert {
   font-size: 12px;
   padding: 10px 12px;

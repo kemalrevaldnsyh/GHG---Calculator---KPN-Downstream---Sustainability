@@ -2,6 +2,7 @@ import '../styles/auth.css';
 import { supabase, supabaseConfigured } from './supabase.js';
 
 const GATE_ID = 'auth-gate';
+const HUB_PORTAL_URL = (import.meta.env.VITE_HUB_PORTAL_URL || 'https://sustainability-hub-portal.vercel.app/').trim();
 
 function brandLogoSvg() {
   return `
@@ -80,6 +81,7 @@ function renderLogin(errorMsg) {
           </div>
           <button type="submit" class="auth-btn auth-btn-primary" id="auth-btn-login" ${supabaseConfigured ? '' : 'disabled'}>Sign in</button>
         </form>
+        <a class="auth-back-link" href="${escapeHtml(HUB_PORTAL_URL)}">← Back to Sustainability Hub Portal</a>
       </div>
     </div>
   `;
