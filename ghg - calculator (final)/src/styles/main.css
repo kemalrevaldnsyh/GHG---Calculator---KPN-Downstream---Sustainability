@@ -943,6 +943,12 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
   }
   .etd-shell .btn-calculate:hover { background: var(--red-hover); }
   .etd-shell .btn-calculate:active { transform: scale(0.98); }
+  .etd-shell .btn-calculate.etd-btn-reset {
+    background: #fff;
+    color: #374151;
+    border: 1px solid var(--border);
+  }
+  .etd-shell .btn-calculate.etd-btn-reset:hover { background: #f9fafb; }
 
   /* Mode hint */
   .etd-shell .mode-hint {

@@ -381,6 +381,53 @@ function updateModeHint() {
   }
 }
 
+function etdResetForm() {
+  var periodEl = etdDom('etd-period');
+  var supplierEl = etdDom('supplier');
+  var destEl = etdDom('destination');
+  var truckEl = etdDom('dist_truck');
+  var vesselEl = etdDom('dist_vessel');
+  var vessel2El = etdDom('dist_vessel2');
+  var hintEl = etdDom('mode-hint');
+  var resultsEl = etdDom('results');
+
+  if (periodEl) periodEl.value = '';
+  if (supplierEl) supplierEl.value = '';
+  if (truckEl) truckEl.value = '';
+  if (vesselEl) vesselEl.value = '';
+  if (vessel2El) vessel2El.value = '';
+  if (destEl) {
+    if (destEl.options && destEl.options.length) destEl.selectedIndex = 0;
+    else destEl.value = 'LBG';
+    if (destEl.id === 'destination' && typeof onEtdDestinationChange === 'function') {
+      onEtdDestinationChange();
+    }
+  }
+
+  if (hintEl) {
+    hintEl.style.display = 'none';
+    hintEl.innerHTML = '';
+  }
+
+  if (resultsEl) resultsEl.style.display = 'none';
+  var rSupplier = etdDom('r-supplier');
+  var rMeta = etdDom('r-meta');
+  var rSummary = etdDom('r-summary');
+  var rTbody = etdDom('r-tbody');
+  var rFob = etdDom('r-fob');
+  var rFactors = etdDom('r-factors');
+  if (rSupplier) rSupplier.textContent = '—';
+  if (rMeta) rMeta.textContent = '—';
+  if (rSummary) rSummary.innerHTML = '';
+  if (rTbody) rTbody.innerHTML = '';
+  if (rFob) rFob.innerHTML = '';
+  if (rFactors) rFactors.innerHTML = '';
+
+  if (typeof latestEtdCalc !== 'undefined') latestEtdCalc = null;
+
+  if (typeof showToast === 'function') showToast('ETD form reset', 'success');
+}
+
 function openFactorModal(dest) {
   currentDest = dest || document.getElementById('destination').value;
   if (!DEST[currentDest]) return;
