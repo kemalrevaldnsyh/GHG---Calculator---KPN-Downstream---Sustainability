@@ -169,8 +169,17 @@ export function initLandingAuthUi() {
   btn.addEventListener('click', () => { signOut(); });
 
   supabase.auth.getSession().then(({ data: { session } }) => {
-    if (emailEl && session?.user?.email) {
-      emailEl.textContent = session.user.email;
-    }
+    if (!session?.user?.email) return;
+    const email = session.user.email;
+    const namePart = email.split('@')[0] || 'User';
+    const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+
+    if (emailEl) emailEl.textContent = email;
+
+    const welcomeEl = document.getElementById('landing-welcome');
+    if (welcomeEl) welcomeEl.textContent = `Welcome, ${displayName}`;
+
+    const avatarEl = document.getElementById('landing-user-avatar');
+    if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
   });
 }
