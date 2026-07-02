@@ -11,9 +11,6 @@
     "sync:modules": "node scripts/sync-modules.mjs",
     "views:to-js": "node scripts/html-views-to-js.mjs"
   },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.49.8"
-  },
   "devDependencies": {
     "vite": "^6.3.5"
   }

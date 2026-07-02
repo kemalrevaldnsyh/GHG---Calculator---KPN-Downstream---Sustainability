@@ -1,4 +1,6 @@
 /** View: ghg-savings — auto-generated from ghg-savings.html */
+import { headerHubPortalLink } from '../app/hub-portal.js';
+
 export const ghgSavingsView = `<div class="page" id="ghg-savings-wrap">
 
 <div class="header">
@@ -9,7 +11,8 @@ export const ghgSavingsView = `<div class="page" id="ghg-savings-wrap">
       <div class="header-sub">ISCC/EU 2018/2001 · Ref. 94 g CO₂eq/MJ · LHV PME 37 MJ/kg</div>
     </div>
   </div>
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    ${headerHubPortalLink()}
     <button class="btn btn-outline" onclick="ghgSavingsReset()">Reset</button>
     <button class="btn btn-outline" onclick="ghgSavingsSaveCurrentResult()">Save Result</button>
     <button class="btn btn-dark" onclick="openGHGSavingsExportModal()">&#8595; Export</button>

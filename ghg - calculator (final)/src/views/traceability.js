@@ -1,4 +1,6 @@
 /** View: traceability — auto-generated from traceability.html */
+import { headerHubPortalLink } from '../app/hub-portal.js';
+
 export const traceabilityView = `<div id="traceability-wrap">
 
 <div class="header">
@@ -9,7 +11,8 @@ export const traceabilityView = `<div id="traceability-wrap">
       <div class="header-sub">Supplier Selection · BL Data · Distance Auto-Select · Save to ETD</div>
     </div>
   </div>
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    ${headerHubPortalLink()}
     <button class="btn btn-sm btn-trc-pdf" onclick="exportTrcPdf()">↓ Export PDF</button>
     <button class="btn btn-sm btn-trc-excel" onclick="exportTrcExcel()">↓ Export Excel</button>
   </div>

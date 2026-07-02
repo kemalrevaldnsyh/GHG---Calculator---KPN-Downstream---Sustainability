@@ -1,4 +1,6 @@
 /** View: landing — auto-generated from landing.html */
+import { landingHubPortalLink } from '../app/hub-portal.js';
+
 const LC_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>`;
 
 function lcCard(className, onclick, title, desc, actionLabel) {
@@ -23,10 +25,8 @@ export const landingView = `<div class="page active" id="page-landing">
           </div>
           <span>GHG Calculator</span>
         </div>
-        <div class="landing-topbar" id="landing-auth-bar" hidden>
-          <span class="landing-user-email" id="landing-user-email"></span>
-          <span class="landing-user-avatar" id="landing-user-avatar" aria-hidden="true"></span>
-          <button type="button" class="landing-signout" id="btn-landing-signout">Sign out</button>
+        <div class="landing-topbar">
+          ${landingHubPortalLink()}
         </div>
       </div>
       <div class="landing-hero">

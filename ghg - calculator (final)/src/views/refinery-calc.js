@@ -1,4 +1,6 @@
 /** View: refinery-calc — auto-generated from refinery-calc.html */
+import { headerHubPortalLink } from '../app/hub-portal.js';
+
 export const refineryCalcView = `<div class="page" id="calc-app-wrap">
 
 <div class="header">
@@ -9,7 +11,8 @@ export const refineryCalcView = `<div class="page" id="calc-app-wrap">
       <div class="header-sub" id="header-main-sub">Ep Processing · ISCC/INS</div>
     </div>
   </div>
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    ${headerHubPortalLink()}
     <button class="btn btn-outline" onclick="resetForm()">Reset</button>
     <button class="btn btn-dark" id="btn-save" onclick="saveToSheet()">Save Calculation</button>
   </div>

@@ -1,4 +1,6 @@
 /** View: etd — auto-generated from etd.html */
+import { headerHubPortalLink } from '../app/hub-portal.js';
+
 export const etdView = `<div class="page" id="etd-app-wrap">
   <div class="header">
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
@@ -8,6 +10,7 @@ export const etdView = `<div class="page" id="etd-app-wrap">
         <div class="header-sub" id="etd-header-sub">Transportation &amp; processing (lokal)</div>
       </div>
     </div>
+    ${headerHubPortalLink()}
   </div>
   <div class="etd-subtabs">
     <button class="etd-subtab active" id="etd-tab-calc" onclick="switchEtdSubTab('calc',this)">Calculator</button>

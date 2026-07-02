@@ -1,4 +1,6 @@
 /** View: raw-data */
+import { headerHubPortalLink } from '../app/hub-portal.js';
+
 export const rawDataView = `<div id="raw-data-wrap">
 
 <div class="header">
@@ -9,7 +11,8 @@ export const rawDataView = `<div id="raw-data-wrap">
       <div class="header-sub">CPO Calculation Input · Monthly Data Perhitungan · Multi-Site EUP</div>
     </div>
   </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    ${headerHubPortalLink()}
     <button type="button" class="btn btn-outline btn-sm" onclick="rdSaveToSheets()">↑ Save</button>
     <button type="button" class="btn btn-sm btn-trc-excel" onclick="rdExportExcel()">↓ Excel</button>
   </div>

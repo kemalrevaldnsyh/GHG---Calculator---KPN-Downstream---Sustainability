@@ -2,11 +2,9 @@ import './styles/main.css';
 import { mountViews } from './app/mount-views.js';
 import { bootCalculatorScripts } from './app/load-scripts.js';
 import { installScrollToTopOnNavigation } from './app/navigation-scroll.js';
-import { requireAuthSession, initLandingAuthUi } from './app/auth-gate.js';
 
 function bootApp() {
   mountViews(document.getElementById('app-root'));
-  initLandingAuthUi();
 
   bootCalculatorScripts()
     .then(() => {
@@ -22,4 +20,4 @@ function bootApp() {
     });
 }
 
-requireAuthSession(bootApp);
+bootApp();

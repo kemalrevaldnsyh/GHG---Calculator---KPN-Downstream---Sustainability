@@ -592,41 +592,18 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
   margin-left: auto;
   flex-shrink: 0;
 }
-.landing-user-email {
-  font-size: 12px;
-  color: #6b7280;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.landing-user-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #801a1a;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.landing-signout {
-  padding: 6px 11px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: #801a1a;
-  font-family: inherit;
+.landing-hub-link {
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  color: var(--brand);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: background 0.15s;
 }
-.landing-signout:hover {
-  background: rgba(128, 26, 26, 0.08);
+.landing-hub-link:hover {
+  background: var(--brand-soft);
 }
 .landing-hero,
 .landing-cards,
@@ -845,6 +822,29 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
 .header-back:hover {
+  background: rgba(255,255,255,0.24);
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.36);
+}
+.header-hub-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.16);
+  color: #f8fafc;
+  border: 1px solid rgba(255,255,255,0.28);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.header-hub-link:hover {
   background: rgba(255,255,255,0.24);
   color: #ffffff;
   border-color: rgba(255,255,255,0.36);
@@ -1442,7 +1442,6 @@ hr { border: none; border-top: 1px solid #f3f4f6; margin: 8px 0; }
     .landing-card { min-height: 0; padding: 22px 20px 20px; border-radius: 16px; }
     .landing-card h2 { font-size: 16px; }
     .landing-card p { font-size: 13px; }
-    .landing-user-email { display: none; }
     .header-back { padding: 6px 10px; font-size: 11px; }
     .input-wrap input { padding: 7px 8px; font-size: 11px; }
     .input-unit { font-size: 9px; padding: 7px 6px; }
